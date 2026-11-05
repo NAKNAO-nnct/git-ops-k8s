@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich
+spec:
+  template:
+    spec:
+      containers:
+        - name: immich
+          env:
+            - name: DB_HOSTNAME
+              value: postgres-external

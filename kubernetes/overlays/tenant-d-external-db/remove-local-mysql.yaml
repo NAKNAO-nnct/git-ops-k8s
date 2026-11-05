@@ -1,0 +1,17 @@
+$patch: delete
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+---
+$patch: delete
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+---
+$patch: delete
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data

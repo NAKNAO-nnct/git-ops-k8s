@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tenant-a
+resources:
+  - ../../tenants/tenant-a
+  - postgres-external.yaml
+patches:
+  - path: remove-local-postgres.yaml
+  - path: immich-external.yaml

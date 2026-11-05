@@ -1,0 +1,26 @@
+proxmox_endpoint = "https://pve.example.invalid:8006/"
+ssh_public_key   = "ssh-ed25519 REPLACE_ME"
+template_id      = 9000
+template_node    = "pve01"
+datastore        = "ceph-pool"
+
+vms = {
+  k8s-01 = {
+    node = "pve01", vm_id = 200, bridge = "vmbr1"
+    address = "dhcp", gateway = "", cores = 4, memory = 8192, disk_gb = 40
+  }
+  k8s-02 = {
+    node = "pve03", vm_id = 201, bridge = "vmbr1"
+    address = "dhcp", gateway = "", cores = 4, memory = 8192, disk_gb = 40
+  }
+  k8s-03 = {
+    node = "pve04", vm_id = 202, bridge = "vmbr1"
+    address = "dhcp", gateway = "", cores = 4, memory = 8192, disk_gb = 40
+  }
+  # DB VM example. It must be configured and secured separately.
+  # tenant-c-db = {
+  #   node = "pve03", vm_id = 203, bridge = "tenantc"
+  #   address = "172.28.103.10/24", gateway = "172.28.103.1"
+  #   cores = 2, memory = 4096, disk_gb = 40
+  # }
+}

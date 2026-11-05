@@ -20,10 +20,13 @@ kubernetes/tenants/       A〜D の Kustomize 定義
 kubernetes/overlays/      A・C・D の外部 DB VM 接続例
 kubernetes/storage/       Immich の S3 直接マウント用 PV の例
 kubernetes/platform/      Laravel 管理画面のデプロイ例
+kubernetes/gitops/       Argo CD の手動同期 ApplicationSet 例
 applications/tenant-d/    DB / Redis を利用する Web サンプル
 admin/                    Laravel 管理画面
 tests/                    マニフェスト検証
 ```
+
+`admin/` は [Laravel アプリケーションのスケルトン](https://github.com/laravel/laravel)（MIT ライセンス）を基にしています。
 
 ## 前提と順序
 
@@ -42,15 +45,16 @@ python -m pip install -r tests\requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-`kubectl kustomize` が必要です。これらは**オフラインの構造検査**であり、イメージ取得、実デプロイ、ネットワークの遮断やストレージの正常性は証明しません。Laravel のテストは `admin` で `composer install` 後に `php artisan test` です。
+`kubectl kustomize` が必要です。これらは**オフラインの構造検査**であり、イメージ取得、実デプロイ、ネットワークの遮断やストレージの正常性は証明しません。Laravel の Docker ビルド・テストは [管理画面の手順](docs/admin.md)を参照してください。
 
 ## セキュリティと運用上の重要事項
 
 - PV の `Retain` はバックアップではありません。S3 のバージョニング、別系統バックアップ、DB を含む復元試験が必要です。
-- HTTP/TCP のアプリ用ポートはサンプルでは全送信元に対して ingress を許可しています。Service は ClusterIP ですが、これ自体はテナント分離ではありません。公開前に送信元、ingress controller、外部 Firewall を絞り、正負両方の疎通テストを行ってください。
+- Web アプリの ingress 例外は `ingress-system` namespace からの該当ポートのみです（同一テナント内の全通信は共通 policy で別途許可）。Ingress controller と経路は含まれず、設置先 namespace や送信元が違えば policy の変更が必要です。Minecraft の TCP 25565 は全送信元からの ingress が許可されます。Service が ClusterIP でもテナント分離を保証しないため、公開前に送信元と Firewall を絞り正負両方の疎通テストを行ってください。
 - 名前空間間の隔離には CNI のポリシー強制、テナントへの Kubernetes 権限制限、特権 Pod / hostNetwork / hostPath 等の禁止が必要です。NetworkPolicy は同じ namespace の Pod 間は全許可します。
 - DNS や API など共有基盤を保護し、CNI のポリシー・SNAT 挙動、Pod CIDR、IPv6、ノードからのアクセスを実環境で確認してください。`ipBlock` による IPv4 の除外は全てのネットワークや CNI の挙動を網羅しません。
 - NetworkPolicy は合算されます。テナントに自分のポリシーの変更権限を与えると、許可を追加され得ます。アプリにも特権を与えないでください。
 - Image tag や `example.invalid` はサンプルです。検証した digest、イメージ更新、署名、脆弱性管理を別途実施します。
 - Secret はリポジトリに保存しません。Secret の保管・暗号化・RBAC・ローテーション・ログ管理は別途設計してください。
 - `kubectl apply` と Laravel の直接操作は GitOps の自動同期ではありません。両方で同一 namespace を管理すると競合するので、管理元を分けます。
+- Argo CD を使う場合は [ApplicationSet の例](kubernetes/gitops/applicationset.example.yaml)の repo URL、branch、対象環境、AppProject 権限を変更してください。自動同期・prune は指定していません。直接操作と二重管理せず、Secret や storage の準備後に手動同期します。

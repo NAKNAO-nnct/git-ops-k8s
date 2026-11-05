@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-samples
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - { name: tenant-a, path: kubernetes/tenants/tenant-a }
+          - { name: tenant-b, path: kubernetes/tenants/tenant-b }
+          - { name: tenant-c, path: kubernetes/tenants/tenant-c }
+          - { name: tenant-d, path: kubernetes/tenants/tenant-d }
+  template:
+    metadata:
+      name: '{{name}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://example.invalid/replace-with-your-repository.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{name}}'

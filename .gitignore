@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+vendor/
+node_modules/
+admin/storage/
+admin/bootstrap/cache/
+secrets/
+kubeconfig
+__pycache__/
+*.pyc
