@@ -14,7 +14,7 @@ Proxmox 上の VM に Kubernetes を構築し、テナントごとのアプリ�
 | D | 自作 Web のサンプル | 専用 MySQL + Redis | MySQL は Ceph RBD。Redis は揮発性 |
 
 ```text
-infrastructure/proxmox/    OpenTofu VM + Cloud-init の例
+infrastructure/proxmox/    OpenTofu VM + Cloud-init、および使い捨て K3s 2ノード検証
 cdk8s/src/                TypeScript による Kubernetes 定義（正本）
 kubernetes/dist/          GitOps 用の生成済み YAML（テナント・外部 DB・管理画面等）
 applications/tenant-d/    DB / Redis を利用する Web サンプル

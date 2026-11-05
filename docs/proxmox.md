@@ -25,3 +25,31 @@ tofu plan
 Terraform state には構成情報が入るため、アクセス制御・暗号化・バックアップを行い、Git には保存しないでください。ノード配置・HA・テンプレートアクセスなどは現環境に合わせた検証が必要です。
 
 参考：[bpg provider](https://registry.terraform.io/providers/bpg/proxmox/latest/docs)・[K3s HA](https://docs.k3s.io/datastore/ha-embedded)。
+
+## 使い捨て K3s 2ノード検証
+
+`infrastructure/proxmox/k3s-lab/` は独立した OpenTofu root です。K3s server 1台（2 vCPU / 4 GiB）と worker 1台（2 vCPU / 2 GiB）を作成し、worker の join まで試します。各 VM は 20 GiB のブートディスクを使い、K3s バージョンを固定します。この構成は HA ではなく、既存の汎用 VM 定義やクラスタ設定には触れません。
+
+ブートディスクは選択した Proxmox datastore（既存 Ceph RBD pool など）に置けますが、**これは Kubernetes の Ceph CSI/PVC 設定ではありません**。K3s はデフォルトの Flannel を使います。この検証は node join の疎通確認までで、NetworkPolicy の強制やテナント workload は対象外です。
+
+plan 前に次を確認してください。
+
+- 選択した bridge で DHCP が利用でき、VM 2台のアドレスを安定して予約できること。worker は QEMU guest agent が報告した server の IP へ join します。`network_ipv4_cidr` はその bridge の CIDR に設定します。
+- Ubuntu cloud-init template の boot disk が `virtio0` であること、Cloud-init drive があり、対象ノードから clone できること。
+- snippet 用の共有 datastore で `snippets` content type が有効であること。snippet には一時 join token が含まれます。
+- 未使用 VM ID と、CPU・メモリ・Ceph 容量がある対象 Proxmox node を選ぶこと。example の値はすべて置き換えてください。
+
+`terraform.tfvars.example` を `terraform.tfvars` にコピーして環境値を設定し、最小権限の Proxmox token は provider が読む `PROXMOX_VE_API_TOKEN` 環境変数で渡します。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する鍵を SSH agent に登録してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
+
+```powershell
+cd infrastructure\proxmox\k3s-lab
+Copy-Item terraform.tfvars.example terraform.tfvars
+tofu init
+tofu fmt -check
+tofu validate
+tofu plan
+```
+
+`plan` は state refresh のため Proxmox API へ接続することがありますが、VM は作成しません。plan の VM ID・配置先・ディスク・ネットワークを確認し、別途明示的に承認するまで apply しないでください。apply は VM を作成・起動し、destroy は VM と K3s の node data を削除します。
+
+起動後、server の DHCP IP に SSH 接続し、`sudo cat /etc/rancher/k3s/k3s.yaml` で kubeconfig を取得します。kubeconfig の `server` アドレスを到達可能な IP に直し、ファイルを Git 管理外に保管してください。`kubectl get nodes -o wide` で server と worker の Ready を確認します。

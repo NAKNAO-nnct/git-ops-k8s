@@ -1,0 +1,13 @@
+proxmox_endpoint   = "https://pve.example.invalid:8006/"
+ssh_username       = "root"
+ssh_public_key     = "ssh-ed25519 REPLACE_ME"
+template_id        = 9000
+template_node      = "REPLACE_WITH_TEMPLATE_NODE"
+vm_node            = "REPLACE_WITH_TARGET_NODE"
+vm_datastore       = "ceph-pool"
+snippet_datastore  = "cephfs"
+network_bridge     = "vmbr1"
+network_ipv4_cidr  = "192.0.2.0/24"
+server_vm_id       = 9300
+worker_vm_id       = 9301
+k3s_version        = "v1.37.2+k3s1"
