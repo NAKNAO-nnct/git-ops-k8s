@@ -1,6 +1,6 @@
 # Laravel 管理画面
 
-Laravel 13 ベースの実験用管理画面です。Kubernetes API に直接アクセスして、ラベル付き namespace 一覧、新規 namespace と基本 NetworkPolicy の作成、この画面で作成した namespace の削除要求を行います。**テナントアプリ、DB、VM、RBAC、バックアップ、DNS、GitOps リポジトリは管理しません**。A〜D は別途 `kubectl apply -k` で作成します。
+Laravel 13 ベースの実験用管理画面です。Kubernetes API に直接アクセスして、ラベル付き namespace 一覧、新規 namespace と基本 NetworkPolicy の作成、この画面で作成した namespace の削除要求を行います。**テナントアプリ、DB、VM、RBAC、バックアップ、DNS、GitOps リポジトリは管理しません**。A〜D は別途生成済み YAML を `kubectl apply -f` で作成します。
 
 ## 重要な安全制約
 
@@ -21,10 +21,10 @@ Laravel 13 ベースの実験用管理画面です。Kubernetes API に直接ア
    docker build --target runtime -t tenant-admin:sample .
    ```
 
-2. ビルドした runtime image を実験クラスタが取得可能な registry に push します。`kubernetes/platform/admin.yaml` の placeholder image を変更します。
-3. 実験クラスタに `platform-admin` namespace と `tenant-admin-auth` Secret を作成します。Secret キーは `username`、`password-hash`（PHP の `password_hash` による bcrypt）、`app-key`（Laravel の `base64:` 付き 32 バイト鍵）です。値はファイルなどから渡し、コマンド履歴や Git に残しません。`kubectl apply -f kubernetes/platform/admin.yaml` は namespace を含みますが、Secret を先に作るには namespace を先に作成してください。
+2. ビルドした runtime image を実験クラスタが取得可能な registry に push します。[admin.ts](../cdk8s/src/resources/admin.ts) の placeholder image を変更し、[README の手順](../README.md#cdk8s-の生成と動作検証)で再生成します。
+3. 実験クラスタに `kubectl create namespace platform-admin` で namespace を作り、`tenant-admin-auth` Secret を作成します。Secret キーは `username`、`password-hash`（PHP の `password_hash` による bcrypt）、`app-key`（Laravel の `base64:` 付き 32 バイト鍵）です。値はファイルなどから渡し、コマンド履歴や Git に残しません。その後 `kubectl apply -f kubernetes\dist\admin` で生成済み manifest を適用します。
 4. Deployment の Ready を確認し、`kubectl -n platform-admin port-forward service/tenant-admin 8000:8000` で `http://127.0.0.1:8000` に接続します。port-forward はクラスタ API 権限が必要です。CNI によって接続元や制御が異なるため、deny-inbound policy の挙動も確認してください。
-5. 書き込みを試す場合のみ manifest を編集し `PLATFORM_WRITES_ENABLED` を `true` にして再適用します。画面で `tenant-` から始まる名前を指定します。削除にはテナント名の再入力が必要です。
+5. 書き込みを試す場合のみ TypeScript 定義の `PLATFORM_WRITES_ENABLED` を `true` にして再生成・再適用します。画面で `tenant-` から始まる名前を指定します。削除にはテナント名の再入力が必要です。
 
 Laravel 付属の開発用サーバーと Basic 認証は本番向けの管理サービスではありません。複数運用者、SSO、監査、GitOps と連動したプロビジョニングには別設計が必要です。
 

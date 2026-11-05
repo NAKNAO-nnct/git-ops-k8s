@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: tenant-c
-resources:
-  - ../../tenants/tenant-c
-  - mysql-external.yaml
-patches:
-  - path: remove-local-mysql.yaml
-  - path: nextcloud-external.yaml

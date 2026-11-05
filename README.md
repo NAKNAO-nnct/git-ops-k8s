@@ -10,17 +10,13 @@ Proxmox 上の VM に Kubernetes を構築し、テナントごとのアプリ�
 |---|---|---|---|
 | A | Immich | 専用 PostgreSQL + Valkey + ML | メディアは S3 互換バケットを直接マウントする**実験用** PV、DB は Ceph RBD |
 | B | Minecraft Java | — | Ceph RBD |
-| C | Nextcloud | 専用 MySQL | Ceph RBD。別途 DB VM 接続の overlay あり |
+| C | Nextcloud | 専用 MySQL | Ceph RBD。別途 DB VM 接続の定義あり |
 | D | 自作 Web のサンプル | 専用 MySQL + Redis | MySQL は Ceph RBD。Redis は揮発性 |
 
 ```text
 infrastructure/proxmox/    OpenTofu VM + Cloud-init の例
-kubernetes/base/          全テナント共通 NetworkPolicy
-kubernetes/tenants/       A〜D の Kustomize 定義
-kubernetes/overlays/      A・C・D の外部 DB VM 接続例
-kubernetes/storage/       Immich の S3 直接マウント用 PV の例
-kubernetes/platform/      Laravel 管理画面のデプロイ例
-kubernetes/gitops/       Argo CD の手動同期 ApplicationSet 例
+cdk8s/src/                TypeScript による Kubernetes 定義（正本）
+kubernetes/dist/          GitOps 用の生成済み YAML（テナント・外部 DB・管理画面等）
 applications/tenant-d/    DB / Redis を利用する Web サンプル
 admin/                    Laravel 管理画面
 tests/                    マニフェスト検証
@@ -38,14 +34,25 @@ tests/                    マニフェスト検証
 
 各ノードの NIC は共通ネットワーク接続でよく、テナントごとに NIC は不要です。Namespace、NetworkPolicy、Pod Security、RBAC を別途正しく設定しても、共有カーネルを使うため、互いに信頼しない利用者の完全な隔離にはなりません。
 
-## 動作検証
+## cdk8s の生成と動作検証
+
+Kubernetes の変更は `cdk8s/src/` の TypeScript で行い、生成済み YAML もコミットします。`kubernetes/dist/` を直接編集せず、Argo CD は各ディレクトリの生成物を読みます。Node.js のホスト導入は不要です。Docker が使える環境で、リポジトリのルートから次を実行します（WSL の Docker を使う場合は WSL 側で実行）。
+
+```sh
+docker run --rm -v "$(pwd):/work" -w /work/cdk8s node:22-bookworm npm ci
+docker run --rm -v "$(pwd):/work" -w /work/cdk8s node:22-bookworm npm run build
+docker run --rm -v "$(pwd):/work" -w /work/cdk8s node:22-bookworm npm run synth
+docker run --rm -v "$(pwd):/work" -w /work/cdk8s node:22-bookworm npm run check
+```
+
+`check` は別の一時ディレクトリに再生成し、コミット対象の YAML とファイル一覧・内容を照合します。内部 DB 版と外部 DB 版は同一 namespace の**代替構成**であり、同時に適用・同期しないでください。
 
 ```powershell
 python -m pip install -r tests\requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-`kubectl kustomize` が必要です。これらは**オフラインの構造検査**であり、イメージ取得、実デプロイ、ネットワークの遮断やストレージの正常性は証明しません。Laravel の Docker ビルド・テストは [管理画面の手順](docs/admin.md)を参照してください。
+これらは**オフラインの構造検査**であり、イメージ取得、実デプロイ、ネットワークの遮断やストレージの正常性は証明しません。Laravel の Docker ビルド・テストは [管理画面の手順](docs/admin.md)を参照してください。
 
 ## セキュリティと運用上の重要事項
 
@@ -57,4 +64,4 @@ python -m unittest discover -s tests -v
 - Image tag や `example.invalid` はサンプルです。検証した digest、イメージ更新、署名、脆弱性管理を別途実施します。
 - Secret はリポジトリに保存しません。Secret の保管・暗号化・RBAC・ローテーション・ログ管理は別途設計してください。
 - `kubectl apply` と Laravel の直接操作は GitOps の自動同期ではありません。両方で同一 namespace を管理すると競合するので、管理元を分けます。
-- Argo CD を使う場合は [ApplicationSet の例](kubernetes/gitops/applicationset.example.yaml)の repo URL、branch、対象環境、AppProject 権限を変更してください。自動同期・prune は指定していません。直接操作と二重管理せず、Secret や storage の準備後に手動同期します。
+- Argo CD を使う場合は [ApplicationSet の TypeScript 定義](cdk8s/src/synth.ts)の repo URL、branch、対象環境、AppProject 権限を変更し、生成した [ApplicationSet](kubernetes/dist/argocd/manifest.k8s.yaml) を利用してください。自動同期・prune は指定していません。直接操作と二重管理せず、Secret や storage の準備後に手動同期します。

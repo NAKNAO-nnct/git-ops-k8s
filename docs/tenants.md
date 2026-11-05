@@ -6,7 +6,7 @@
 
 - `ceph-rbd` は既存 Ceph に接続された RBD CSI の StorageClass として別途作成します。Kubernetes 内に Ceph を新設する定義はありません。CSI の認証情報は専用に払い出します。
 - CNI による NetworkPolicy 強制と DNS ラベル `k8s-app=kube-dns` を確認します。環境が異なれば共通 policy を修正してください。
-- `kubectl apply -f kubernetes/tenants/tenant-X/namespace.yaml` で各 namespace を作った後、下記 Secret を安全に作成します。キーは `kubectl create secret generic NAME -n NAMESPACE --from-file=KEY=秘密ファイル` で指定できます。秘密ファイルは Git の対象外の安全な場所に置き、シェル履歴に値を残さないでください。
+- `kubectl create namespace tenant-X` で対象 namespace を先に作った後、下記 Secret を安全に作成します。後で生成済み manifest の Namespace を適用するとラベルも設定されます。キーは `kubectl create secret generic NAME -n NAMESPACE --from-file=KEY=秘密ファイル` で指定できます。秘密ファイルは Git の対象外の安全な場所に置き、シェル履歴に値を残さないでください。
 
 | namespace | Secret 名 | 必要なキー |
 |---|---|---|
@@ -23,11 +23,12 @@ S3 は POSIX ファイルシステムではありません。採用例の [csi-s
 
 1. CSI driver `ru.yandex.s3.csi` と GeeseFS をその driver の公式手順で実験クラスタにインストールし、K3s・OS・endpoint との互換性と privileged driver のリスクを確認します。実際に利用できる chart/version は自身で固定・検証してください。CSI は namespace 内ではなくノード側で S3 にアクセスするため、Pod の NetworkPolicy が S3 資格情報や通信を隔離するわけではありません。
 2. 専用 S3 資格情報を、driver の指定に従い `kube-system/csi-s3-secret` として作成します。`accessKeyID`, `secretAccessKey`, `endpoint`、必要なら `region` を含みます。TLS とバケット単位の最小権限を使います。
-3. [immich-s3-pv.example.yaml](../kubernetes/storage/immich-s3-pv.example.yaml) を Git 管理外にコピーし、`volumeHandle` を `使い捨てバケット名/専用prefix` に変更します。PV は `Retain` に設定済みで、この例の PVC に固定して紐付きます。**PV の 10Gi は S3 の実容量制限ではありません**。ディレクトリとファイルの `0777/0666` は実験用で、本番向けの権限設定ではありません。
-4. PV と tenant-a の namespace / Secret を作成し、以下を実行します。
+3. [S3 PV の TypeScript 定義](../cdk8s/src/resources/immich-s3-pv.ts) の `volumeHandle` を `使い捨てバケット名/専用prefix` に変更し、[README の手順](../README.md#cdk8s-の生成と動作検証)で再生成します。PV は `Retain` に設定済みで、この例の PVC に固定して紐付きます。**PV の 10Gi は S3 の実容量制限ではありません**。ディレクトリとファイルの `0777/0666` は実験用で、本番向けの権限設定ではありません。
+4. tenant-a の namespace / Secret を作成し、以下を実行します。
 
 ```powershell
-kubectl apply -k kubernetes\tenants\tenant-a
+kubectl apply -f kubernetes\dist\immich-s3-pv
+kubectl apply -f kubernetes\dist\tenant-a
 kubectl -n tenant-a get pods,pvc
 kubectl -n tenant-a logs deployment/immich
 kubectl -n tenant-a port-forward service/immich 2283:2283
@@ -40,7 +41,7 @@ kubectl -n tenant-a port-forward service/immich 2283:2283
 公式 EULA に同意した場合だけ `EULA=TRUE` のまま適用します。起動時にサーバーやライブラリをダウンロードするため外向き HTTPS が必要です。
 
 ```powershell
-kubectl apply -k kubernetes\tenants\tenant-b
+kubectl apply -f kubernetes\dist\tenant-b
 kubectl -n tenant-b get pods,pvc
 kubectl -n tenant-b port-forward service/minecraft 25565:25565
 ```
@@ -49,15 +50,15 @@ kubectl -n tenant-b port-forward service/minecraft 25565:25565
 
 ## C: Nextcloud
 
-Secret を作成し `kubectl apply -k kubernetes\tenants\tenant-c` で適用します。`kubectl -n tenant-c port-forward service/nextcloud 8080:80` でローカル確認します。運用には trusted domains、HTTPS、cron、メール、キャッシュ、アップグレードやバックアップを別途設定します。
+Secret を作成し `kubectl apply -f kubernetes\dist\tenant-c` で適用します。`kubectl -n tenant-c port-forward service/nextcloud 8080:80` でローカル確認します。運用には trusted domains、HTTPS、cron、メール、キャッシュ、アップグレードやバックアップを別途設定します。
 
 ## D: Web + MySQL + Redis
 
-`applications/tenant-d` でイメージをビルドし、プライベート registry に push します。`kubernetes/tenants/tenant-d/app.yaml` の `example.invalid/tenant-d-web:0.1.0` を検証したイメージに変更し、Secret 作成後に `kubectl apply -k kubernetes\tenants\tenant-d`。`kubectl -n tenant-d port-forward service/web 8081:8080` のあと `/` と `/health` を確認します。DB や Redis が利用できない場合 `/health` は 503 を返します。Redis は永続化されません。
+`applications/tenant-d` でイメージをビルドし、プライベート registry に push します。[tenant-d.ts](../cdk8s/src/resources/tenant-d.ts) の `example.invalid/tenant-d-web:0.1.0` を検証したイメージに変更して再生成し、Secret 作成後に `kubectl apply -f kubernetes\dist\tenant-d`。`kubectl -n tenant-d port-forward service/web 8081:8080` のあと `/` と `/health` を確認します。DB や Redis が利用できない場合 `/health` は 503 を返します。Redis は永続化されません。
 
 ## 外部 DB VM
 
-各テナントの `kubernetes/overlays/tenant-{a,c,d}-external-db` は、それぞれの内蔵 DB を除外して VM に接続する雛形です。DNS・IP・ルート・DB・Secret は別途用意します。適用前に [network.md](network.md) を確認してください。
+`kubernetes/dist/tenant-{a,c,d}-external-db` は、それぞれの内蔵 DB を除外して VM に接続する生成済みの雛形です。対応する `cdk8s/src/resources/tenant-*-external-db.ts` の DNS 名・IP を変更して再生成してください。DNS・IP・ルート・DB・Secret は別途用意します。内部 DB 版と外部 DB 版は同時に適用・同期しないでください。適用前に [network.md](network.md) を確認してください。
 
 ## 削除
 

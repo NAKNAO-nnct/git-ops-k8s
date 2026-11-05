@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenant-samples
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: tenant-a
+            path: kubernetes/dist/tenant-a
+          - name: tenant-b
+            path: kubernetes/dist/tenant-b
+          - name: tenant-c
+            path: kubernetes/dist/tenant-c
+          - name: tenant-d
+            path: kubernetes/dist/tenant-d
+  template:
+    metadata:
+      name: "{{name}}"
+    spec:
+      destination:
+        namespace: "{{name}}"
+        server: https://kubernetes.default.svc
+      project: default
+      source:
+        path: "{{path}}"
+        repoURL: https://example.invalid/replace-with-your-repository.git
+        targetRevision: main

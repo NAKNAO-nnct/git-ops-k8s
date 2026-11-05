@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    platform.example/tenant: tenant-b
+  name: tenant-b
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: tenant-b
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: same-tenant-and-dns
+  namespace: tenant-b
+spec:
+  egress:
+    - to:
+        - podSelector: {}
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+  ingress:
+    - from:
+        - podSelector: {}
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft
+  namespace: tenant-b
+spec:
+  ports:
+    - port: 25565
+      protocol: TCP
+      targetPort: 25565
+  selector:
+    app: minecraft
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minecraft-data
+  namespace: tenant-b
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: ceph-rbd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft
+  namespace: tenant-b
+spec:
+  selector:
+    matchLabels:
+      app: minecraft
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      containers:
+        - env:
+            - name: EULA
+              value: "TRUE"
+            - name: VERSION
+              value: 1.21.4
+            - name: TYPE
+              value: VANILLA
+            - name: MEMORY
+              value: 2G
+          image: itzg/minecraft-server:java21
+          name: minecraft
+          ports:
+            - containerPort: 25565
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minecraft-data
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: minecraft-network
+  namespace: tenant-b
+spec:
+  egress:
+    - ports:
+        - port: 443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 127.0.0.0/8
+  ingress:
+    - ports:
+        - port: 25565
+          protocol: TCP
+  podSelector:
+    matchLabels:
+      app: minecraft
+  policyTypes:
+    - Ingress
+    - Egress

@@ -1,5 +1,4 @@
 import pathlib
-import subprocess
 import unittest
 
 import yaml
@@ -7,15 +6,9 @@ import yaml
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
-def build(path):
-    output = subprocess.run(
-        ["kubectl", "kustomize", str(ROOT / path)],
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    ).stdout
-    return list(yaml.safe_load_all(output))
+def build(chart):
+    manifest = ROOT / "kubernetes" / "dist" / chart / "manifest.k8s.yaml"
+    return list(yaml.safe_load_all(manifest.read_text(encoding="utf-8")))
 
 
 def resource(docs, kind, name):
@@ -29,7 +22,7 @@ class ManifestTests(unittest.TestCase):
     def test_tenants_default_deny_and_dns(self):
         for letter in "abcd":
             with self.subTest(tenant=letter):
-                docs = build(f"kubernetes/tenants/tenant-{letter}")
+                docs = build(f"tenant-{letter}")
                 ns = f"tenant-{letter}"
                 resource(docs, "Namespace", ns)
                 deny = resource(docs, "NetworkPolicy", "default-deny")
@@ -44,13 +37,13 @@ class ManifestTests(unittest.TestCase):
                 ])
 
     def test_immich_s3_and_db_are_separate(self):
-        docs = build("kubernetes/tenants/tenant-a")
+        docs = build("tenant-a")
         media = resource(docs, "PersistentVolumeClaim", "immich-media")
         db = resource(docs, "PersistentVolumeClaim", "immich-postgres")
         self.assertEqual(media["spec"]["volumeName"], "tenant-a-s3-experiment")
         self.assertEqual(media["spec"]["storageClassName"], "")
         self.assertEqual(db["spec"]["storageClassName"], "ceph-rbd")
-        pv = yaml.safe_load((ROOT / "kubernetes/storage/immich-s3-pv.example.yaml").read_text())
+        pv = resource(build("immich-s3-pv"), "PersistentVolume", "tenant-a-s3-experiment")
         self.assertEqual(pv["spec"]["persistentVolumeReclaimPolicy"], "Retain")
         self.assertEqual(pv["spec"]["claimRef"]["namespace"], "tenant-a")
         self.assertEqual(pv["spec"]["csi"]["driver"], "ru.yandex.s3.csi")
@@ -58,14 +51,14 @@ class ManifestTests(unittest.TestCase):
     def test_web_ingress_is_limited_to_ingress_namespace(self):
         for letter, name in [("a", "immich-http"), ("c", "nextcloud-http"), ("d", "web-http")]:
             with self.subTest(tenant=letter):
-                docs = build(f"kubernetes/tenants/tenant-{letter}")
+                docs = build(f"tenant-{letter}")
                 policy = resource(docs, "NetworkPolicy", name)
                 self.assertEqual(policy["spec"]["ingress"][0]["from"], [
                     {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "ingress-system"}}}
                 ])
 
     def test_external_db_overlay(self):
-        docs = build("kubernetes/overlays/tenant-c-external-db")
+        docs = build("tenant-c-external-db")
         self.assertFalse(any(x["kind"] == "Deployment" and x["metadata"]["name"] == "mysql" for x in docs))
         app = resource(docs, "Deployment", "nextcloud")
         env = app["spec"]["template"]["spec"]["containers"][0]["env"]
@@ -82,7 +75,7 @@ class ManifestTests(unittest.TestCase):
             ("d", "web", "web", "MYSQL_HOST", "mysql-external", "mysql", 3306),
         ]:
             with self.subTest(tenant=letter):
-                docs = build(f"kubernetes/overlays/tenant-{letter}-external-db")
+                docs = build(f"tenant-{letter}-external-db")
                 self.assertFalse(any(x["kind"] == "Deployment" and x["metadata"]["name"] == db_name for x in docs))
                 app = resource(docs, "Deployment", deployment)
                 containers = app["spec"]["template"]["spec"]["containers"]
@@ -93,12 +86,40 @@ class ManifestTests(unittest.TestCase):
                 self.assertEqual(policy["spec"]["egress"][0]["ports"][0]["port"], port)
 
     def test_management_writes_disabled_and_no_public_service(self):
-        docs = list(yaml.safe_load_all((ROOT / "kubernetes/platform/admin.yaml").read_text()))
+        docs = build("admin")
         app = resource(docs, "Deployment", "tenant-admin")
         env = app["spec"]["template"]["spec"]["containers"][0]["env"]
         self.assertEqual(next(x["value"] for x in env if x["name"] == "PLATFORM_WRITES_ENABLED"), "false")
         service = resource(docs, "Service", "tenant-admin")
         self.assertNotIn(service["spec"].get("type"), ["NodePort", "LoadBalancer"])
+
+    def test_argocd_points_to_independent_tenant_charts(self):
+        appset = resource(build("argocd"), "ApplicationSet", "tenant-samples")
+        elements = appset["spec"]["generators"][0]["list"]["elements"]
+        self.assertEqual(elements, [
+            {"name": f"tenant-{letter}", "path": f"kubernetes/dist/tenant-{letter}"}
+            for letter in "abcd"
+        ])
+        for element in elements:
+            docs = build(element["name"])
+            resource(docs, "Namespace", element["name"])
+            self.assertTrue(all(
+                doc["metadata"].get("namespace", element["name"]) == element["name"]
+                for doc in docs
+            ))
+
+    def test_external_db_removes_local_database_resources(self):
+        for letter, db, claim in [
+            ("a", "postgres", "immich-postgres"),
+            ("c", "mysql", "mysql-data"),
+            ("d", "mysql", "mysql-data"),
+        ]:
+            with self.subTest(tenant=letter):
+                docs = build(f"tenant-{letter}-external-db")
+                for kind, name in [("Deployment", db), ("Service", db), ("PersistentVolumeClaim", claim)]:
+                    self.assertFalse(any(
+                        doc["kind"] == kind and doc["metadata"]["name"] == name for doc in docs
+                    ))
 
 
 if __name__ == "__main__":
