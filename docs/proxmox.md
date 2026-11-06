@@ -39,7 +39,7 @@ plan 前に次を確認してください。
 - snippet 用の共有 datastore で `snippets` content type が有効であること。snippet には一時 join token が含まれます。
 - 未使用 VM ID と、CPU・メモリ・Ceph 容量がある対象 Proxmox node を選ぶこと。example の値はすべて置き換えてください。
 
-`terraform.tfvars.example` を `terraform.tfvars` にコピーして環境値を設定し、最小権限の Proxmox token は provider が読む `PROXMOX_VE_API_TOKEN` 環境変数で渡します。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する鍵を SSH agent に登録してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
+`terraform.tfvars.example` を `terraform.tfvars` にコピーして環境値を設定し、最小権限の Proxmox token は provider が読む `PROXMOX_VE_API_TOKEN` 環境変数で渡します。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する秘密鍵を `ssh_private_key_path` で指定してください（既定値は `~/.ssh/id_ed25519`）。provider は API endpoint の DNS suffix を使って node 名に FQDN を割り当てます。各 FQDN が実行環境から名前解決でき、SSH 接続できることを確認してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
 
 ```powershell
 cd infrastructure\proxmox\k3s-lab

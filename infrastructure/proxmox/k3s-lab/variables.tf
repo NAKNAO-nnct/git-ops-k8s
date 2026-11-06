@@ -8,6 +8,12 @@ variable "ssh_username" {
   description = "Proxmox SSH account allowed to upload Cloud-init snippets."
 }
 
+variable "ssh_private_key_path" {
+  type        = string
+  description = "Path to the private SSH key used to upload Cloud-init snippets."
+  default     = "~/.ssh/id_ed25519"
+}
+
 variable "ssh_public_key" {
   type        = string
   description = "Public SSH key installed for the ubuntu user."

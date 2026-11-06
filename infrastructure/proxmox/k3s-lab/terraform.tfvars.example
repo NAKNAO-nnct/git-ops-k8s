@@ -1,5 +1,6 @@
 proxmox_endpoint   = "https://pve.example.invalid:8006/"
 ssh_username       = "root"
+ssh_private_key_path = "~/.ssh/id_ed25519"
 ssh_public_key     = "ssh-ed25519 REPLACE_ME"
 template_id        = 9000
 template_node      = "REPLACE_WITH_TEMPLATE_NODE"
