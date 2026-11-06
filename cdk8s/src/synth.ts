@@ -11,7 +11,6 @@ import { resources as externalA } from './resources/tenant-a-external-db';
 import { resources as externalC } from './resources/tenant-c-external-db';
 import { resources as externalD } from './resources/tenant-d-external-db';
 import { resources as admin } from './resources/admin';
-import { resources as immichS3 } from './resources/immich-s3-pv';
 
 const tenants: Record<string, Resource[]> = {
   'tenant-a': tenantA,
@@ -106,6 +105,5 @@ export function synth(outdir: string): void {
     if (ext) synthChart(outdir, `${name}-external-db`, withExternalDb(all, ext.additions, ext.config));
   }
   synthChart(outdir, 'admin', admin);
-  synthChart(outdir, 'immich-s3-pv', immichS3);
   synthArgo(outdir);
 }

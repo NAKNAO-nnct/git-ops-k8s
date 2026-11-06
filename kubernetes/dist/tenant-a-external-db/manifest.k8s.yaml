@@ -88,12 +88,11 @@ metadata:
   namespace: tenant-a
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  storageClassName: ""
-  volumeName: tenant-a-s3-experiment
+  storageClassName: ceph-rbd
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

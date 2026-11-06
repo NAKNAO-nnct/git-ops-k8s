@@ -4,7 +4,7 @@
 
 ## 共通準備
 
-- `ceph-rbd` は既存 Ceph に接続された RBD CSI の StorageClass として別途作成します。Kubernetes 内に Ceph を新設する定義はありません。CSI の認証情報は専用に払い出します。
+- `ceph-rbd` は既存 Ceph に接続された RBD CSI の StorageClass として別途作成します。Kubernetes 内に Ceph を新設する定義はありません。CSI は専用 CephX ユーザーを使い、`client.admin` は使わないでください。K3s node から Ceph MON の TCP 3300/6789 と OSD の TCP 6800-7300 へ到達できる必要があります。
 - CNI による NetworkPolicy 強制と DNS ラベル `k8s-app=kube-dns` を確認します。環境が異なれば共通 policy を修正してください。
 - `kubectl create namespace tenant-X` で対象 namespace を先に作った後、下記 Secret を安全に作成します。後で生成済み manifest の Namespace を適用するとラベルも設定されます。キーは `kubectl create secret generic NAME -n NAMESPACE --from-file=KEY=秘密ファイル` で指定できます。秘密ファイルは Git の対象外の安全な場所に置き、シェル履歴に値を残さないでください。
 
@@ -17,24 +17,22 @@
 
 上記の Secret 値は PostgreSQL / MySQL の初期化時に使います。**後で Secret だけ変更しても DB の既存パスワードは変更されません。** DB 側も安全にローテーションしてください。MySQL は永続ボリュームが既に初期化されている場合、初期 DB / ユーザーも再作成しません。
 
-## A: Immich / S3 直接マウント — 必ず使い捨てデータで
+## A: Immich / Ceph RBD
 
-S3 は POSIX ファイルシステムではありません。採用例の [csi-s3 / GeeseFS](https://github.com/yandex-cloud/k8s-csi-s3) 自身も、マウント方式や接続先ごとに POSIX 互換性・整合性が異なると説明しています。Immich は起動時にファイルの作成・読取・上書きを検査します（[公式資料](https://docs.immich.app/administration/system-integrity/)）。rename、上書き、キャッシュ、一貫性、権限、マウント切断、並列操作、削除等の互換性を本サンプルは保証しません。**本物の写真や既存バケットでは絶対に試さず**、独立した使い捨てバケットを使ってください。Immich の mount check を無効にしないでください。
+Immich のメディア、PostgreSQL、ML キャッシュは `ceph-rbd` StorageClass の RBD PVC を使います。Ceph CSI RBD driver と `ceph-rbd` StorageClass は別途用意してください（[Ceph CSI の公式手順](https://github.com/ceph/ceph-csi/tree/devel/charts/ceph-csi-rbd)）。Ceph の cluster ID、MON アドレス、RBD pool、専用 CephX ユーザーを設定し、StorageClass の reclaim policy は実験中 `Retain` を推奨します。RBD は単一 node mount の `ReadWriteOnce` です。この定義は Immich を 1 replica で動かします。
 
-1. CSI driver `ru.yandex.s3.csi` と GeeseFS をその driver の公式手順で実験クラスタにインストールし、K3s・OS・endpoint との互換性と privileged driver のリスクを確認します。実際に利用できる chart/version は自身で固定・検証してください。CSI は namespace 内ではなくノード側で S3 にアクセスするため、Pod の NetworkPolicy が S3 資格情報や通信を隔離するわけではありません。
-2. 専用 S3 資格情報を、driver の指定に従い `kube-system/csi-s3-secret` として作成します。`accessKeyID`, `secretAccessKey`, `endpoint`、必要なら `region` を含みます。TLS とバケット単位の最小権限を使います。
-3. [S3 PV の TypeScript 定義](../cdk8s/src/resources/immich-s3-pv.ts) の `volumeHandle` を `使い捨てバケット名/専用prefix` に変更し、[README の手順](../README.md#cdk8s-の生成と動作検証)で再生成します。PV は `Retain` に設定済みで、この例の PVC に固定して紐付きます。**PV の 10Gi は S3 の実容量制限ではありません**。ディレクトリとファイルの `0777/0666` は実験用で、本番向けの権限設定ではありません。
-4. tenant-a の namespace / Secret を作成し、以下を実行します。
+1. K3s node から Ceph MON/OSD へのルーティングと firewall を確認します。標準ポートは MON TCP 3300/6789、OSD TCP 6800-7300 です。
+2. `tenant-a` namespace と `immich-db` Secret を作成します。DB password は安全な場所で生成し、Git やシェル履歴に残さないでください。
+3. 生成済み manifest を適用して状態を確認します。
 
 ```powershell
-kubectl apply -f kubernetes\dist\immich-s3-pv
 kubectl apply -f kubernetes\dist\tenant-a
 kubectl -n tenant-a get pods,pvc
 kubectl -n tenant-a logs deployment/immich
 kubectl -n tenant-a port-forward service/immich 2283:2283
 ```
 
-ローカル `http://127.0.0.1:2283` で使い捨て写真のアップロード・表示・更新・削除、再起動、mount 障害、復元を検証します。ML はモデル取得のための外向き HTTPS が必要です。S3 のバージョニングと DB / S3 双方の別系統バックアップ・リストア試験なしに重要データを扱わないでください。
+ローカル `http://127.0.0.1:2283` で動作を確認します。ML はモデル取得のための外向き HTTPS が必要です。Ceph RBD と `Retain` はバックアップではありません。重要なデータを扱う前に、Ceph とは別系統の DB / メディアバックアップと復元試験を用意してください。
 
 ## B: Minecraft
 
@@ -62,4 +60,4 @@ Secret を作成し `kubectl apply -f kubernetes\dist\tenant-c` で適用しま�
 
 ## 削除
 
-バックアップの取得と復元、PVC の reclaim policy、S3 の保存方針を確認し、DB や写真の保持について明示的に合意してから削除します。namespace を消しても外部 VM、S3、`Retain` ボリュームは自動で片付かない場合があります。
+バックアップの取得と復元、PVC の reclaim policy、Ceph RBD の保存方針を確認し、DB や写真の保持について明示的に合意してから削除します。namespace を消しても外部 VM や `Retain` ボリュームは自動で片付かない場合があります。

@@ -36,17 +36,14 @@ class ManifestTests(unittest.TestCase):
                     {"protocol": "TCP", "port": 53},
                 ])
 
-    def test_immich_s3_and_db_are_separate(self):
+    def test_immich_persistent_data_uses_ceph_rbd(self):
         docs = build("tenant-a")
-        media = resource(docs, "PersistentVolumeClaim", "immich-media")
-        db = resource(docs, "PersistentVolumeClaim", "immich-postgres")
-        self.assertEqual(media["spec"]["volumeName"], "tenant-a-s3-experiment")
-        self.assertEqual(media["spec"]["storageClassName"], "")
-        self.assertEqual(db["spec"]["storageClassName"], "ceph-rbd")
-        pv = resource(build("immich-s3-pv"), "PersistentVolume", "tenant-a-s3-experiment")
-        self.assertEqual(pv["spec"]["persistentVolumeReclaimPolicy"], "Retain")
-        self.assertEqual(pv["spec"]["claimRef"]["namespace"], "tenant-a")
-        self.assertEqual(pv["spec"]["csi"]["driver"], "ru.yandex.s3.csi")
+        for name in ("immich-media", "immich-ml-cache", "immich-postgres"):
+            with self.subTest(pvc=name):
+                claim = resource(docs, "PersistentVolumeClaim", name)
+                self.assertEqual(claim["spec"]["storageClassName"], "ceph-rbd")
+                self.assertEqual(claim["spec"]["accessModes"], ["ReadWriteOnce"])
+                self.assertNotIn("volumeName", claim["spec"])
 
     def test_web_ingress_is_limited_to_ingress_namespace(self):
         for letter, name in [("a", "immich-http"), ("c", "nextcloud-http"), ("d", "web-http")]:

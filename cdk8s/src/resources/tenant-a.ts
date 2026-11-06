@@ -86,15 +86,14 @@ export const resources: Resource[] = [
     },
     "spec": {
       "accessModes": [
-        "ReadWriteMany"
+        "ReadWriteOnce"
       ],
       "resources": {
         "requests": {
           "storage": "10Gi"
         }
       },
-      "storageClassName": "",
-      "volumeName": "tenant-a-s3-experiment"
+      "storageClassName": "ceph-rbd"
     }
   } satisfies PersistentVolumeClaim,
   {
