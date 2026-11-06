@@ -6,7 +6,7 @@ OpenTofu 1.6 以上または Terraform と `bpg/proxmox` provider を使用し�
 
 1. Proxmox に cloud-init 対応の Ubuntu cloud image template を作成し、`qemu-guest-agent` を有効化しておきます。template の boot disk は `scsi0`、Cloud-init は provider が扱える構成にします。
 2. template を対象ノードから clone できること、datastore が利用可能であることを確認します。物理ノードごとに1 VM を配置できるよう ID と空き容量を決めます。サンプルの ID・IP を実環境にそのまま使わないでください。
-3. API 用の専用ユーザーと必要な最小権限の API token を用意し、HTTPS の証明書を実行端末で信頼します。provider は `PROXMOX_VE_API_TOKEN` などの環境変数を利用できます。認証情報を tfvars や Git に書かないでください。API token と template clone に必要な権限は provider の資料を参照します。
+3. API 用の専用ユーザーと必要な最小権限の API token を用意し、HTTPS の証明書を実行端末で信頼します。provider は `PROXMOX_VE_API_TOKEN` などの環境変数を利用できます。認証情報を tfvars や Git に書かないでください。template には clone 権限を、作成先の `/vms/<vmid>` には VM の割り当て・構成権限を設定します。privilege separation を有効にした token では、必要な ACL をユーザーと token の両方に設定してください。必要な権限の詳細は provider の資料を参照します。
 4. `terraform.tfvars.example` を `terraform.tfvars` にコピーし、endpoint、公開鍵、template、ノード、bridge、storage、IP を設定します。`terraform.tfvars` は Git の対象外です。DHCP を使う場合はアドレス予約を行い、固定 IP と DNS を確認します。
 
 ```powershell
