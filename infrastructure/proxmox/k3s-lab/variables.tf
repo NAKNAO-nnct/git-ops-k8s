@@ -76,6 +76,16 @@ variable "network_ipv4_cidr" {
   }
 }
 
+variable "server_ipv4_address" {
+  type        = string
+  description = "Reserved IPv4 address of the K3s server primary NIC, used by the worker to join."
+
+  validation {
+    condition     = can(cidrnetmask("${var.server_ipv4_address}/32"))
+    error_message = "server_ipv4_address must be a valid IPv4 address."
+  }
+}
+
 variable "ceph_network_bridge" {
   type        = string
   description = "Proxmox bridge connected to the Ceph public network."

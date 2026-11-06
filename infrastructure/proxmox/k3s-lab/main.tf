@@ -31,7 +31,7 @@ locals {
       - |
         set -eu
         curl -fsSL https://get.k3s.io -o /tmp/install-k3s.sh
-        INSTALL_K3S_VERSION='${var.k3s_version}' K3S_URL='https://${proxmox_virtual_environment_vm.server.ipv4_addresses[1][0]}:6443' K3S_TOKEN='${random_password.k3s_token.result}' sh /tmp/install-k3s.sh agent --node-name k3s-lab-worker
+        INSTALL_K3S_VERSION='${var.k3s_version}' K3S_URL='https://${var.server_ipv4_address}:6443' K3S_TOKEN='${random_password.k3s_token.result}' sh /tmp/install-k3s.sh agent --node-name k3s-lab-worker
   CLOUD_CONFIG
 }
 
@@ -202,8 +202,8 @@ resource "proxmox_virtual_environment_vm" "worker" {
 }
 
 output "server_ipv4_address" {
-  description = "DHCP address of the K3s server, reported by QEMU guest agent."
-  value       = proxmox_virtual_environment_vm.server.ipv4_addresses[1][0]
+  description = "Reserved IPv4 address of the K3s server primary NIC."
+  value       = var.server_ipv4_address
 }
 
 output "worker_ipv4_address" {
