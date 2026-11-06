@@ -103,6 +103,10 @@ resource "proxmox_virtual_environment_vm" "server" {
     bridge = var.network_bridge
   }
 
+  network_device {
+    bridge = var.ceph_network_bridge
+  }
+
   initialization {
     datastore_id      = var.vm_datastore
     user_data_file_id = proxmox_virtual_environment_file.server_cloud_config.id
@@ -110,6 +114,12 @@ resource "proxmox_virtual_environment_vm" "server" {
     ip_config {
       ipv4 {
         address = "dhcp"
+      }
+    }
+
+    ip_config {
+      ipv4 {
+        address = var.server_ceph_ipv4_address
       }
     }
 
@@ -160,6 +170,10 @@ resource "proxmox_virtual_environment_vm" "worker" {
     bridge = var.network_bridge
   }
 
+  network_device {
+    bridge = var.ceph_network_bridge
+  }
+
   initialization {
     datastore_id      = var.vm_datastore
     user_data_file_id = proxmox_virtual_environment_file.worker_cloud_config.id
@@ -167,6 +181,12 @@ resource "proxmox_virtual_environment_vm" "worker" {
     ip_config {
       ipv4 {
         address = "dhcp"
+      }
+    }
+
+    ip_config {
+      ipv4 {
+        address = var.worker_ceph_ipv4_address
       }
     }
 

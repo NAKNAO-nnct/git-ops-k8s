@@ -35,6 +35,7 @@ Terraform state には構成情報が入るため、アクセス制御・暗号�
 plan 前に次を確認してください。
 
 - 選択した bridge で DHCP が利用でき、VM 2台のアドレスを安定して予約できること。worker は QEMU guest agent が報告した server の IP へ join します。`network_ipv4_cidr` はその bridge の CIDR に設定します。
+- Ceph CSI を使う場合は、Ceph public network に接続された第2 bridge と、重複しない固定 IP を各 VM に設定します。K3s lab の例では `ceph_network_bridge` と `server_ceph_ipv4_address` / `worker_ceph_ipv4_address` を指定します。Ceph NIC には gateway を設定せず、既存のprimary NICをdefault routeとして維持します。ICMPに応答しないだけではIP未使用の保証にならないため、DHCP/IPAMの予約も確認してください。
 - Ubuntu 24.04 Cloud Image は OpenTofu が `snippet_node` からダウンロードし、`image_datastore` にimport用ファイルとして保存します。ダウンロードノードからCanonicalへDNS・HTTPS接続できること、この datastore で `import` content type が有効なこと、VM用の `vm_datastore` にディスクを作成できることを確認します。既存のVM templateは不要です。
 - snippet 用の共有 datastore で `snippets` content type が有効であること。snippet には一時 join token が含まれます。
 - 未使用 VM ID と、CPU・メモリ・Ceph 容量がある対象 Proxmox node を選ぶこと。example の値はすべて置き換えてください。

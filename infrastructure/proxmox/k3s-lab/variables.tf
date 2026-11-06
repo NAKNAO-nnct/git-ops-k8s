@@ -76,6 +76,31 @@ variable "network_ipv4_cidr" {
   }
 }
 
+variable "ceph_network_bridge" {
+  type        = string
+  description = "Proxmox bridge connected to the Ceph public network."
+}
+
+variable "server_ceph_ipv4_address" {
+  type        = string
+  description = "Static IPv4 CIDR for the K3s server's Ceph network interface; no gateway is configured."
+
+  validation {
+    condition     = can(cidrnetmask(var.server_ceph_ipv4_address))
+    error_message = "server_ceph_ipv4_address must be a valid IPv4 CIDR."
+  }
+}
+
+variable "worker_ceph_ipv4_address" {
+  type        = string
+  description = "Static IPv4 CIDR for the K3s worker's Ceph network interface; no gateway is configured."
+
+  validation {
+    condition     = can(cidrnetmask(var.worker_ceph_ipv4_address))
+    error_message = "worker_ceph_ipv4_address must be a valid IPv4 CIDR."
+  }
+}
+
 variable "server_vm_id" {
   type        = number
   description = "Unused VM ID for the K3s server."
