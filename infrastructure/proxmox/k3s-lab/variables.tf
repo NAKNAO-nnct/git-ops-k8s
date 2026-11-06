@@ -19,14 +19,9 @@ variable "ssh_public_key" {
   description = "Public SSH key installed for the ubuntu user."
 }
 
-variable "template_id" {
-  type        = number
-  description = "Cloud-init-enabled Ubuntu template VM ID."
-}
-
-variable "template_node" {
+variable "snippet_node" {
   type        = string
-  description = "Proxmox node that hosts the template."
+  description = "Proxmox node used to upload Cloud-init snippets."
 }
 
 variable "vm_node" {
@@ -39,9 +34,31 @@ variable "vm_datastore" {
   description = "Shared datastore for VM boot and cloud-init disks."
 }
 
+variable "image_datastore" {
+  type        = string
+  description = "Shared datastore with the import content type enabled for Ubuntu Cloud Images."
+}
+
 variable "snippet_datastore" {
   type        = string
   description = "Shared datastore with the snippets content type enabled."
+}
+
+variable "ubuntu_cloud_image_url" {
+  type        = string
+  description = "Pinned Canonical Ubuntu 24.04 LTS cloud image URL."
+  default     = "https://cloud-images.ubuntu.com/releases/24.04/release-20260926/ubuntu-24.04-server-cloudimg-amd64.img"
+}
+
+variable "ubuntu_cloud_image_sha256" {
+  type        = string
+  description = "SHA-256 checksum for ubuntu_cloud_image_url."
+  default     = "6a81c37564db9b1ee84e141922625e1d7c5b389b99bb3c572e0243607d5bb4d2"
+
+  validation {
+    condition     = can(regex("^[0-9a-fA-F]{64}$", var.ubuntu_cloud_image_sha256))
+    error_message = "ubuntu_cloud_image_sha256 must be a 64-character hexadecimal SHA-256 checksum."
+  }
 }
 
 variable "network_bridge" {

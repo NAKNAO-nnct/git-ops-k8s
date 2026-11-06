@@ -35,11 +35,11 @@ Terraform state には構成情報が入るため、アクセス制御・暗号�
 plan 前に次を確認してください。
 
 - 選択した bridge で DHCP が利用でき、VM 2台のアドレスを安定して予約できること。worker は QEMU guest agent が報告した server の IP へ join します。`network_ipv4_cidr` はその bridge の CIDR に設定します。
-- Ubuntu cloud-init template の boot disk が `virtio0` であること、Cloud-init drive があり、対象ノードから clone できること。
+- Ubuntu 24.04 Cloud Image は OpenTofu が `snippet_node` からダウンロードし、`image_datastore` にimport用ファイルとして保存します。ダウンロードノードからCanonicalへDNS・HTTPS接続できること、この datastore で `import` content type が有効なこと、VM用の `vm_datastore` にディスクを作成できることを確認します。既存のVM templateは不要です。
 - snippet 用の共有 datastore で `snippets` content type が有効であること。snippet には一時 join token が含まれます。
 - 未使用 VM ID と、CPU・メモリ・Ceph 容量がある対象 Proxmox node を選ぶこと。example の値はすべて置き換えてください。
 
-`terraform.tfvars.example` を `terraform.tfvars` にコピーして環境値を設定し、最小権限の Proxmox token は provider が読む `PROXMOX_VE_API_TOKEN` 環境変数で渡します。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する秘密鍵を `ssh_private_key_path` で指定してください（既定値は `~/.ssh/id_ed25519`）。provider は API endpoint の DNS suffix を使って node 名に FQDN を割り当てます。各 FQDN が実行環境から名前解決でき、SSH 接続できることを確認してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
+Proxmox VE 9.2.24 の `download-url` API には image datastore 上の `Datastore.AllocateTemplate` と、ダウンロード先ノード上の `Sys.AccessNetwork` が必要です。`proxmox_download_file` provider 文書には `Sys.Audit` / `Sys.Modify` も記載されているため、異なるProxmoxバージョンでは実機APIの権限要件を確認してください。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する秘密鍵を `ssh_private_key_path` で指定してください（既定値は `~/.ssh/id_ed25519`）。provider は API endpoint の DNS suffix を使って node 名に FQDN を割り当てます。各 FQDN が実行環境から名前解決でき、SSH 接続できることを確認してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
 
 ```powershell
 cd infrastructure\proxmox\k3s-lab

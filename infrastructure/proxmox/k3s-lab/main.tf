@@ -35,10 +35,20 @@ locals {
   CLOUD_CONFIG
 }
 
+resource "proxmox_download_file" "ubuntu_cloud_image" {
+  content_type       = "import"
+  datastore_id       = var.image_datastore
+  file_name          = "ubuntu-24.04-server-cloudimg-amd64.qcow2"
+  node_name          = var.snippet_node
+  url                = var.ubuntu_cloud_image_url
+  checksum           = var.ubuntu_cloud_image_sha256
+  checksum_algorithm = "sha256"
+}
+
 resource "proxmox_virtual_environment_file" "server_cloud_config" {
   content_type = "snippets"
   datastore_id = var.snippet_datastore
-  node_name    = var.template_node
+  node_name    = var.snippet_node
 
   source_raw {
     data      = local.server_cloud_config
@@ -49,7 +59,7 @@ resource "proxmox_virtual_environment_file" "server_cloud_config" {
 resource "proxmox_virtual_environment_file" "worker_cloud_config" {
   content_type = "snippets"
   datastore_id = var.snippet_datastore
-  node_name    = var.template_node
+  node_name    = var.snippet_node
 
   source_raw {
     data      = local.worker_cloud_config
@@ -64,13 +74,6 @@ resource "proxmox_virtual_environment_vm" "server" {
   vm_id           = var.server_vm_id
   tags            = ["k3s-lab", "opentofu"]
   stop_on_destroy = true
-
-  clone {
-    vm_id        = var.template_id
-    node_name    = var.template_node
-    datastore_id = var.vm_datastore
-    full         = true
-  }
 
   agent {
     enabled = true
@@ -92,6 +95,7 @@ resource "proxmox_virtual_environment_vm" "server" {
   disk {
     datastore_id = var.vm_datastore
     interface    = "virtio0"
+    import_from  = proxmox_download_file.ubuntu_cloud_image.id
     size         = 20
   }
 
@@ -128,13 +132,6 @@ resource "proxmox_virtual_environment_vm" "worker" {
   tags            = ["k3s-lab", "opentofu"]
   stop_on_destroy = true
 
-  clone {
-    vm_id        = var.template_id
-    node_name    = var.template_node
-    datastore_id = var.vm_datastore
-    full         = true
-  }
-
   agent {
     enabled = true
     wait_for_ip {
@@ -155,6 +152,7 @@ resource "proxmox_virtual_environment_vm" "worker" {
   disk {
     datastore_id = var.vm_datastore
     interface    = "virtio0"
+    import_from  = proxmox_download_file.ubuntu_cloud_image.id
     size         = 20
   }
 

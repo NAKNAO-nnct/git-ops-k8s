@@ -28,8 +28,8 @@ provider "proxmox" {
     private_key = file(pathexpand(var.ssh_private_key_path))
 
     node {
-      name    = var.template_node
-      address = "${var.template_node}${local.proxmox_ssh_domain}"
+      name    = var.snippet_node
+      address = "${var.snippet_node}${local.proxmox_ssh_domain}"
     }
 
     node {
