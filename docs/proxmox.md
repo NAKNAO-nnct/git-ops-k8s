@@ -1,6 +1,6 @@
 # Proxmox VM / Cloud-init
 
-OpenTofu 1.6 以上または Terraform と `bpg/proxmox` provider を使用します。サンプルは仮想 NIC 1本の VM を作成し、Cloud-init でユーザー・SSH 公開鍵・IPv4 を指定します。**K3s、DB、qemu-guest-agent のインストールは行いません**。
+OpenTofu 1.6 以上または Terraform と `bpg/proxmox` provider を使用します。サンプルは仮想 NIC 1本の VM を作成し、Cloud-init でユーザー・SSH 公開鍵・IPv4 を指定します。**Kubernetes、DB、qemu-guest-agent のインストールは行いません**。
 
 ## 準備
 
@@ -24,33 +24,4 @@ tofu plan
 
 Terraform state には構成情報が入るため、アクセス制御・暗号化・バックアップを行い、Git には保存しないでください。ノード配置・HA・テンプレートアクセスなどは現環境に合わせた検証が必要です。
 
-参考：[bpg provider](https://registry.terraform.io/providers/bpg/proxmox/latest/docs)・[K3s HA](https://docs.k3s.io/datastore/ha-embedded)。
-
-## 使い捨て K3s 2ノード検証
-
-`infrastructure/proxmox/k3s-lab/` は独立した OpenTofu root です。K3s server 1台（2 vCPU / 4 GiB）と worker 1台（2 vCPU / 2 GiB）を作成し、worker の join まで試します。各 VM は 20 GiB のブートディスクを使い、K3s バージョンを固定します。この構成は HA ではなく、既存の汎用 VM 定義やクラスタ設定には触れません。
-
-ブートディスクは選択した Proxmox datastore（既存 Ceph RBD pool など）に置けますが、**これは Kubernetes の Ceph CSI/PVC 設定ではありません**。K3s はデフォルトの Flannel を使います。この検証は node join の疎通確認までで、NetworkPolicy の強制やテナント workload は対象外です。
-
-plan 前に次を確認してください。
-
-- 選択した bridge で DHCP が利用でき、VM 2台のアドレスを安定して予約できること。worker は `server_ipv4_address` に設定した server の primary IP へ join します。`network_ipv4_cidr` はその bridge の CIDR に設定します。
-- Ceph CSI を使う場合は、Ceph public network に接続された第2 bridge と、重複しない固定 IP を各 VM に設定します。K3s lab の例では `ceph_network_bridge` と `server_ceph_ipv4_address` / `worker_ceph_ipv4_address` を指定します。Ceph NIC には gateway を設定せず、既存のprimary NICをdefault routeとして維持します。ICMPに応答しないだけではIP未使用の保証にならないため、DHCP/IPAMの予約も確認してください。
-- Ubuntu 24.04 Cloud Image は OpenTofu が `snippet_node` からダウンロードし、`image_datastore` にimport用ファイルとして保存します。ダウンロードノードからCanonicalへDNS・HTTPS接続できること、この datastore で `import` content type が有効なこと、VM用の `vm_datastore` にディスクを作成できることを確認します。既存のVM templateは不要です。
-- snippet 用の共有 datastore で `snippets` content type が有効であること。snippet には一時 join token が含まれます。
-- 未使用 VM ID と、CPU・メモリ・Ceph 容量がある対象 Proxmox node を選ぶこと。example の値はすべて置き換えてください。
-
-Proxmox VE 9.2.24 の `download-url` API には image datastore 上の `Datastore.AllocateTemplate` と、ダウンロード先ノード上の `Sys.AccessNetwork` が必要です。`proxmox_download_file` provider 文書には `Sys.Audit` / `Sys.Modify` も記載されているため、異なるProxmoxバージョンでは実機APIの権限要件を確認してください。snippet のアップロードには Proxmox node への SSH も使うため、`ssh_username` で指定したアカウントに対応する秘密鍵を `ssh_private_key_path` で指定してください（既定値は `~/.ssh/id_ed25519`）。provider は API endpoint の DNS suffix を使って node 名に FQDN を割り当てます。各 FQDN が実行環境から名前解決でき、SSH 接続できることを確認してください。OpenTofu state には生成した join token が入るため、state は非公開で保管し、Git に追加しないでください。
-
-```powershell
-cd infrastructure\proxmox\k3s-lab
-Copy-Item terraform.tfvars.example terraform.tfvars
-tofu init
-tofu fmt -check
-tofu validate
-tofu plan
-```
-
-`plan` は state refresh のため Proxmox API へ接続することがありますが、VM は作成しません。plan の VM ID・配置先・ディスク・ネットワークを確認し、別途明示的に承認するまで apply しないでください。apply は VM を作成・起動し、destroy は VM と K3s の node data を削除します。
-
-起動後、server の DHCP IP に SSH 接続し、`sudo cat /etc/rancher/k3s/k3s.yaml` で kubeconfig を取得します。kubeconfig の `server` アドレスを到達可能な IP に直し、ファイルを Git 管理外に保管してください。`kubectl get nodes -o wide` で server と worker の Ready を確認します。
+参考：[bpg provider](https://registry.terraform.io/providers/bpg/proxmox/latest/docs)。

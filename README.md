@@ -14,7 +14,7 @@ Proxmox 上の VM に Kubernetes を構築し、テナントごとのアプリ�
 | D | 自作 Web のサンプル | 専用 MySQL + Redis | MySQL は Ceph RBD。Redis は揮発性 |
 
 ```text
-infrastructure/proxmox/    OpenTofu VM + Cloud-init、および使い捨て K3s 2ノード検証
+infrastructure/proxmox/    OpenTofu VM + Cloud-init
 cdk8s/src/                TypeScript による Kubernetes 定義（正本）
 kubernetes/dist/          GitOps 用の生成済み YAML（テナント・外部 DB・管理画面等）
 applications/tenant-d/    DB / Redis を利用する Web サンプル
@@ -27,8 +27,8 @@ tests/                    マニフェスト検証
 ## 前提と順序
 
 1. 実験用クラスタ、リストア可能なバックアップ、重複しない IP/VM ID と容量を用意します。**既存クラスタをそのまま試験台にしないでください。**
-2. [VM 作成手順](docs/proxmox.md)で cloud-init 対応 VM を用意します。例は K3s node 3台と、任意の DB VM を作れます。OS の初期アカウント・SSH 公開鍵・IP のみ設定し、K3s・MySQL・SDN は自動インストールしません。
-3. 3ノードへの K3s 等のインストール、etcd の quorum と API の固定入口、NetworkPolicy を強制できる CNI、既存 Ceph 用 CSI と `ceph-rbd` StorageClass は別途準備します。**K3s のデフォルト Flannel 単体では、このリポジトリの NetworkPolicy を強制できません。** Cilium の CNI 併用手順と MTU は構築する K3s/Cilium の公式資料に従ってください。
+2. [VM 作成手順](docs/proxmox.md)で cloud-init 対応 VM を用意します。OS の初期アカウント・SSH 公開鍵・IP のみ設定し、Kubernetes・MySQL・SDN は自動インストールしません。
+3. Kubernetes クラスタ、NetworkPolicy を強制できる CNI、既存 Ceph 用 CSI と `ceph-rbd` StorageClass は別途準備します。CNI による NetworkPolicy の強制、API endpoint、ルーティング、MTU を実環境に合わせて確認してください。
 4. [テナント構築手順](docs/tenants.md)に従い、Secret・CSI・StorageClass を準備し、対象テナントを適用します。placeholder を実値に変更する前に必ず内容を確認してください。
 5. [Laravel 管理画面](docs/admin.md)を構築します。管理画面は現時点で namespace と基本 NetworkPolicy の直接作成・削除のみ対応し、**アプリ・DB・VM の自動作成や Git への書き戻しには対応していません**。
 

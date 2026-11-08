@@ -4,7 +4,7 @@
 
 ## 共通準備
 
-- `ceph-rbd` は既存 Ceph に接続された RBD CSI の StorageClass として別途作成します。Kubernetes 内に Ceph を新設する定義はありません。CSI は専用 CephX ユーザーを使い、`client.admin` は使わないでください。K3s node から Ceph MON の TCP 3300/6789 と OSD の TCP 6800-7300 へ到達できる必要があります。
+- `ceph-rbd` は既存 Ceph に接続された RBD CSI の StorageClass として別途作成します。Kubernetes 内に Ceph を新設する定義はありません。CSI は専用 CephX ユーザーを使い、`client.admin` は使わないでください。Kubernetes node から Ceph MON の TCP 3300/6789 と OSD の TCP 6800-7300 へ到達できる必要があります。
 - CNI による NetworkPolicy 強制と DNS ラベル `k8s-app=kube-dns` を確認します。環境が異なれば共通 policy を修正してください。
 - `kubectl create namespace tenant-X` で対象 namespace を先に作った後、下記 Secret を安全に作成します。後で生成済み manifest の Namespace を適用するとラベルも設定されます。キーは `kubectl create secret generic NAME -n NAMESPACE --from-file=KEY=秘密ファイル` で指定できます。秘密ファイルは Git の対象外の安全な場所に置き、シェル履歴に値を残さないでください。
 
@@ -21,7 +21,7 @@
 
 Immich のメディア、PostgreSQL、ML キャッシュは `ceph-rbd` StorageClass の RBD PVC を使います。Ceph CSI RBD driver と `ceph-rbd` StorageClass は別途用意してください（[Ceph CSI の公式手順](https://github.com/ceph/ceph-csi/tree/devel/charts/ceph-csi-rbd)）。Ceph の cluster ID、MON アドレス、RBD pool、専用 CephX ユーザーを設定し、StorageClass の reclaim policy は実験中 `Retain` を推奨します。RBD は単一 node mount の `ReadWriteOnce` です。この定義は Immich を 1 replica で動かします。
 
-1. K3s node から Ceph MON/OSD へのルーティングと firewall を確認します。標準ポートは MON TCP 3300/6789、OSD TCP 6800-7300 です。
+1. Kubernetes node から Ceph MON/OSD へのルーティングと firewall を確認します。標準ポートは MON TCP 3300/6789、OSD TCP 6800-7300 です。
 2. `tenant-a` namespace と `immich-db` Secret を作成します。DB password は安全な場所で生成し、Git やシェル履歴に残さないでください。
 3. 生成済み manifest を適用して状態を確認します。
 
