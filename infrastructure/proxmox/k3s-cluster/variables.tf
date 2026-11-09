@@ -125,14 +125,14 @@ variable "node_addresses" {
 
 variable "ubuntu_cloud_image_url" {
   type        = string
-  description = "Pinned Canonical Ubuntu 24.04 LTS Cloud Image URL."
-  default     = "https://cloud-images.ubuntu.com/releases/24.04/release-20260926/ubuntu-24.04-server-cloudimg-amd64.img"
+  description = "Pinned Canonical Ubuntu 26.04 LTS Cloud Image URL."
+  default     = "https://cloud-images.ubuntu.com/releases/26.04/release-20261016/ubuntu-26.04-server-cloudimg-amd64.img"
 }
 
 variable "ubuntu_cloud_image_sha256" {
   type        = string
   description = "SHA-256 checksum for ubuntu_cloud_image_url."
-  default     = "6a81c37564db9b1ee84e141922625e1d7c5b389b99bb3c572e0243607d5bb4d2"
+  default     = "5645d0318ad21f643ebb1ac4567514620e9893380b07b0201fda163baa5b7eb5"
 
   validation {
     condition     = can(regex("^[0-9a-fA-F]{64}$", var.ubuntu_cloud_image_sha256))

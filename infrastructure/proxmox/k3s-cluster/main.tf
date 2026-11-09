@@ -165,7 +165,7 @@ locals {
 resource "proxmox_download_file" "ubuntu_cloud_image" {
   content_type       = "import"
   datastore_id       = var.image_datastore
-  file_name          = "ubuntu-24.04-server-cloudimg-amd64.qcow2"
+  file_name          = "ubuntu-26.04-server-cloudimg-amd64.qcow2"
   node_name          = var.image_node
   url                = var.ubuntu_cloud_image_url
   checksum           = var.ubuntu_cloud_image_sha256
