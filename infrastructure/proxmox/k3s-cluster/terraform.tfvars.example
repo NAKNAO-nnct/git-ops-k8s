@@ -1,0 +1,22 @@
+proxmox_endpoint     = "https://pve.example.invalid:8006/"
+ssh_username         = "root"
+ssh_private_key_path = "~/.ssh/id_ed25519"
+ssh_public_key       = "ssh-ed25519 REPLACE_ME"
+
+primary_bridge  = "vmbr1"
+primary_cidr    = "192.0.2.0/24"
+primary_gateway = "192.0.2.1"
+ceph_bridge     = "vmbr0"
+ceph_cidr       = "198.51.100.0/24"
+
+api_vip = "192.0.2.206"
+
+# Documentation-only addresses. Replace these with unique, reserved addresses before applying.
+node_addresses = {
+  k3s-master-pve01 = { primary = "192.0.2.200/24", ceph = "198.51.100.200/24" }
+  k3s-worker-pve01 = { primary = "192.0.2.201/24", ceph = "198.51.100.201/24" }
+  k3s-master-pve03 = { primary = "192.0.2.202/24", ceph = "198.51.100.202/24" }
+  k3s-worker-pve03 = { primary = "192.0.2.203/24", ceph = "198.51.100.203/24" }
+  k3s-master-pve04 = { primary = "192.0.2.204/24", ceph = "198.51.100.204/24" }
+  k3s-worker-pve04 = { primary = "192.0.2.205/24", ceph = "198.51.100.205/24" }
+}

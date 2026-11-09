@@ -1,5 +1,27 @@
 # Proxmox VM / Cloud-init
 
+## 永続 K3s HA クラスタ
+
+`infrastructure/proxmox/k3s-cluster/` は、3 台の Proxmox ホストそれぞれに K3s server 1 台と worker 1 台を作成します。server は 2 vCPU / 4 GiB、worker は 8 vCPU / 16 GiB です。server は `NoSchedule` taint を持ち、アプリの配置先は worker に限定します。Ubuntu 24.04 Cloud Image から VM を作成し、K3s の 3 server embedded-etcd 構成と kube-vip による API VIP を設定します。
+
+- `vmbr1` を通常通信・外部通信・Kubernetes API VIP 用に使い、デフォルトゲートウェイを設定します。
+- `vmbr0` を Ceph 用 NIC に使います。この NIC にデフォルトゲートウェイは設定しません。
+- 例にある IP は文書用の予約アドレスです。実環境の値は Gitignore 対象の `terraform.tfvars` にだけ保存し、適用前に Proxmox の稼働 VM IP、Cloud-init 固定 IP、その他の手動割当との重複を確認して予約してください。DHCP/IPAM がなければ読み取り専用インベントリだけで未使用を保証することはできません。
+- VM の OS / コンテナイメージ用ディスクは Ceph RBD 上に作成します。アプリの永続データは別途 Ceph CSI / StorageClass を構成して保存します。Ceph CSI、CNI の NetworkPolicy 強制、Ingress、バックアップはこの root の対象外です。テナント workload を載せる前にこれらを準備・検証してください。
+
+```powershell
+cd infrastructure\proxmox\k3s-cluster
+Copy-Item terraform.tfvars.example terraform.tfvars
+# terraform.tfvars の SSH 公開鍵と IP 候補を確認・修正する。
+terraform init
+terraform validate
+terraform plan
+```
+
+`terraform.tfvars` と Terraform state は Git に含めません。`plan` を確認するだけで VM は作成されません。VM 作成の `apply` は、IP の重複確認・Proxmox 権限確認・plan 差分確認後に別途明示的に実行してください。
+
+適用後、Cloud-init が完了するまで待ち、bootstrap server で `sudo k3s kubectl get nodes -o wide` を実行して 3 server / 3 worker が `Ready` であることと、API VIP 経由の接続を確認します。Terraform は QEMU Guest Agent の IP 取得まで待ちますが、K3s の join 完了までは待ちません。kubeconfig は bootstrap server の `/etc/rancher/k3s/k3s.yaml` にあります。CNI の NetworkPolicy 強制と Ceph CSI が整うまではテナント workload を適用しないでください。
+
 OpenTofu 1.6 以上または Terraform と `bpg/proxmox` provider を使用します。サンプルは仮想 NIC 1本の VM を作成し、Cloud-init でユーザー・SSH 公開鍵・IPv4 を指定します。**Kubernetes、DB、qemu-guest-agent のインストールは行いません**。
 
 ## 準備
