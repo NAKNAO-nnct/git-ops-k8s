@@ -97,6 +97,6 @@ kubectl get csidriver
 
 アプリケーションは PVC で `ceph-rbd`（通常 `ReadWriteOnce`）または `cephfs`（`ReadWriteMany`）を指定します。PVC の要求容量は論理容量であり、物理容量の予約ではありません。Ceph pool を監視し、実際の PVC provision / mount をテストしてから workload を載せてください。両 StorageClass は `Retain` なので、PVC 削除だけでは Ceph 上のデータは自動削除されません。
 
-CSI はアプリの永続データを Ceph に置きますが、worker の 32 GiB boot disk は引き続き OS、containerd image、ログ、`emptyDir` などに使われます。node の ephemeral storage が不足しないよう `nodefs` / image 使用量を監視してください。また、StorageClass や共有 CephX user だけでは tenant 間の強いデータ境界にならないため、実運用で分離が必要なら pool / filesystem / CephX user と Kubernetes の権限を合わせて設計します。
+CSI はアプリの永続データを Ceph に置きますが、worker の 64 GiB boot disk は引き続き OS、containerd image、ログ、`emptyDir` などに使われます。node の ephemeral storage が不足しないよう `nodefs` / image 使用量を監視してください。また、StorageClass や共有 CephX user だけでは tenant 間の強いデータ境界にならないため、実運用で分離が必要なら pool / filesystem / CephX user と Kubernetes の権限を合わせて設計します。
 
 更新前に upstream の [Operator quick start](https://ceph.github.io/ceph-csi-operator/quick-start/) と [installation guide](https://ceph.github.io/ceph-csi-operator/installation/) を確認してください。

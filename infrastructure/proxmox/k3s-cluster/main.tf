@@ -21,7 +21,7 @@ locals {
       bootstrap = false
       cores     = 8
       memory    = 16384
-      disk_gb   = 32
+      disk_gb   = 64
     }
     "k3s-master-pve03" = {
       node      = "pve03"
@@ -39,7 +39,7 @@ locals {
       bootstrap = false
       cores     = 8
       memory    = 16384
-      disk_gb   = 32
+      disk_gb   = 64
     }
     "k3s-master-pve04" = {
       node      = "pve04"
@@ -57,7 +57,7 @@ locals {
       bootstrap = false
       cores     = 8
       memory    = 16384
-      disk_gb   = 32
+      disk_gb   = 64
     }
   }
 

@@ -2,7 +2,7 @@
 
 ## 永続 K3s HA クラスタ
 
-`infrastructure/proxmox/k3s-cluster/` は、3 台の Proxmox ホストそれぞれに K3s server 1 台と worker 1 台を作成します。server は 2 vCPU / 4 GiB / 40 GiB disk、worker は 8 vCPU / 16 GiB / 32 GiB disk です。VM boot disk は Ceph RBD 上です。server は `NoSchedule` taint を持ち、アプリの配置先は worker に限定します。Ubuntu 26.04 Cloud Image から VM を作成し、K3s の 3 server embedded-etcd 構成と kube-vip による API VIP を設定します。
+`infrastructure/proxmox/k3s-cluster/` は、3 台の Proxmox ホストそれぞれに K3s server 1 台と worker 1 台を作成します。server は 2 vCPU / 4 GiB / 40 GiB disk、worker は 8 vCPU / 16 GiB / 64 GiB disk です。VM boot disk は Ceph RBD 上です。server は `NoSchedule` taint を持ち、アプリの配置先は worker に限定します。Ubuntu 26.04 Cloud Image から VM を作成し、K3s の 3 server embedded-etcd 構成と kube-vip による API VIP を設定します。
 
 - `vmbr1` を通常通信・外部通信・Kubernetes API VIP 用に使い、デフォルトゲートウェイを設定します。
 - `vmbr0` を Ceph 用 NIC に使います。この NIC にデフォルトゲートウェイは設定しません。

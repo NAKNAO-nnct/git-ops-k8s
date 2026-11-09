@@ -12,7 +12,7 @@ docs/                                 Proxmox、network、Argo CD 手順
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
 ```
 
-各 Proxmox host に server 1 台（2 vCPU / 4 GiB / 40 GiB disk）と worker 1 台（8 vCPU / 16 GiB / 32 GiB disk）を作成します。VM boot disk は Ceph RBD 上です。server は embedded etcd と kube-vip API VIP を使い、Ubuntu 26.04 LTS Cloud Image から起動します。VM 作成前に [Proxmox 手順](docs/proxmox.md)を確認してください。
+各 Proxmox host に server 1 台（2 vCPU / 4 GiB / 40 GiB disk）と worker 1 台（8 vCPU / 16 GiB / 64 GiB disk）を作成します。VM boot disk は Ceph RBD 上です。server は embedded etcd と kube-vip API VIP を使い、Ubuntu 26.04 LTS Cloud Image から起動します。VM 作成前に [Proxmox 手順](docs/proxmox.md)を確認してください。
 
 ## 構築順序
 
