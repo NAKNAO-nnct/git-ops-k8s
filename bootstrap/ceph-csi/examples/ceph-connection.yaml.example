@@ -1,0 +1,10 @@
+apiVersion: csi.ceph.io/v1
+kind: CephConnection
+metadata:
+  name: homelab-ceph
+  namespace: ceph-csi-operator-system
+spec:
+  monitors:
+    - "REPLACE_WITH_CEPH_MON_1_IP:3300"
+    - "REPLACE_WITH_CEPH_MON_2_IP:3300"
+    - "REPLACE_WITH_CEPH_MON_3_IP:3300"

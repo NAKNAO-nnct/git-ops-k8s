@@ -17,4 +17,4 @@
 
 ## Ceph storage
 
-Ceph CSI と StorageClass は cluster bootstrap とは別に構成します。CephX は必要最小限の専用ユーザーを使い、node から MON / OSD への routing と firewall を確認してください。PV の `Retain` は backup の代わりではありません。Ceph 外の backup と restore test を用意します。
+Ceph CSI Operator、RBD / CephFS driver、StorageClass の導入手順は[こちら](ceph-csi.md)です。CephX は必要最小限の専用ユーザーを使い、node から MON / OSD への routing と firewall を確認してください。PV の `Retain` は backup の代わりではありません。Ceph 外の backup と restore test を用意します。
