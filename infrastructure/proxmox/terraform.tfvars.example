@@ -17,10 +17,4 @@ vms = {
     node = "pve04", vm_id = 202, bridge = "vmbr1"
     address = "dhcp", gateway = "", cores = 4, memory = 8192, disk_gb = 40
   }
-  # DB VM example. It must be configured and secured separately.
-  # tenant-c-db = {
-  #   node = "pve03", vm_id = 203, bridge = "tenantc"
-  #   address = "172.28.103.10/24", gateway = "172.28.103.1"
-  #   cores = 2, memory = 4096, disk_gb = 40
-  # }
 }

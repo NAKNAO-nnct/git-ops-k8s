@@ -22,6 +22,8 @@ terraform plan
 
 適用後、Cloud-init が完了するまで待ち、bootstrap server で `sudo k3s kubectl get nodes -o wide` を実行して 3 server / 3 worker が `Ready` であることと、API VIP 経由の接続を確認します。Terraform は QEMU Guest Agent の IP 取得まで待ちますが、K3s の join 完了までは待ちません。kubeconfig は bootstrap server の `/etc/rancher/k3s/k3s.yaml` にあります。CNI の NetworkPolicy 強制と Ceph CSI が整うまではテナント workload を適用しないでください。
 
+Argo CD の導入は [Argo CD bootstrap 手順](argocd.md)を参照してください。
+
 OpenTofu 1.6 以上または Terraform と `bpg/proxmox` provider を使用します。サンプルは仮想 NIC 1本の VM を作成し、Cloud-init でユーザー・SSH 公開鍵・IPv4 を指定します。**Kubernetes、DB、qemu-guest-agent のインストールは行いません**。
 
 ## 準備
@@ -42,7 +44,7 @@ tofu plan
 
 `plan` を十分確認し、影響範囲に合意できた場合のみ人が `tofu apply` します。初期化後、VM ごとに SSH、IP、qemu-guest-agent、移行、時刻同期を確認してください。既存 VM は自動 import されません。
 
-`vms` に専用 DB VM を追加する例もあります。bridge を実在する tenant 用 VNet に変更し、ルートと Firewall を先に用意します。Terraform は DB ソフト・アカウント・バックアップを作成しません。[外部 DB 接続](network.md)を参照してください。
+`infrastructure/proxmox/` は Cloud-init 対応 template から汎用 VM を作成する root です。永続 K3s cluster の6台は専用 root `infrastructure/proxmox/k3s-cluster/` で管理します。
 
 Terraform state には構成情報が入るため、アクセス制御・暗号化・バックアップを行い、Git には保存しないでください。ノード配置・HA・テンプレートアクセスなどは現環境に合わせた検証が必要です。
 
