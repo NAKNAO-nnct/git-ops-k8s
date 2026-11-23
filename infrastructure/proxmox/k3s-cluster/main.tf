@@ -4,6 +4,72 @@ resource "random_password" "k3s_token" {
 }
 
 locals {
+  ssh_authorized_keys = distinct(concat(
+    [trimspace(var.ssh_public_key)],
+    [for key in var.additional_ssh_public_keys : trimspace(key)]
+  ))
+
+  ssh_authorized_keys_script = <<-SCRIPT
+    set -euo pipefail
+
+    user=ubuntu
+    home="$(getent passwd "$user" | cut -d: -f6)"
+    if [[ -z "$home" ]]; then
+      echo "Could not find the ubuntu home directory." >&2
+      exit 1
+    fi
+
+    authorized_keys="$home/.ssh/authorized_keys"
+    install -d -o "$user" -g "$user" -m 700 "$home/.ssh"
+    touch "$authorized_keys"
+    chown "$user:$user" "$authorized_keys"
+    chmod 600 "$authorized_keys"
+
+    key_file="$(mktemp)"
+    tmp_file=""
+    cleanup() {
+      rm -f "$key_file"
+      if [[ -n "$tmp_file" ]]; then
+        rm -f "$tmp_file"
+      fi
+    }
+    trap cleanup EXIT
+
+    cat > "$key_file" <<'GITHUB_KEYS'
+    ${join("\n", local.ssh_authorized_keys)}
+    GITHUB_KEYS
+
+    while IFS=' ' read -r key_type key_blob _; do
+      [[ -n "$key_type" ]] || continue
+      if [[ -z "$key_blob" ]]; then
+        echo "Found an invalid SSH public key." >&2
+        exit 1
+      fi
+      if ! awk -v type="$key_type" -v blob="$key_blob" '$1 == type && $2 == blob { found = 1 } END { exit !found }' "$authorized_keys"; then
+        printf '%s %s\n' "$key_type" "$key_blob" >> "$authorized_keys"
+      fi
+    done < "$key_file"
+
+    tmp_file="$(mktemp)"
+    awk 'NR == FNR { target[$1 " " $2] = 1; next } { id = $1 " " $2; if (id in target && seen[id]++) next; print }' "$key_file" "$authorized_keys" > "$tmp_file"
+    cat "$tmp_file" > "$authorized_keys"
+    chown "$user:$user" "$authorized_keys"
+    chmod 600 "$authorized_keys"
+
+    while IFS=' ' read -r key_type key_blob _; do
+      [[ -n "$key_type" ]] || continue
+      count="$(awk -v type="$key_type" -v blob="$key_blob" '$1 == type && $2 == blob { n++ } END { print n + 0 }' "$authorized_keys")"
+      if [[ "$count" -ne 1 ]]; then
+        echo "An SSH public key was not present exactly once." >&2
+        exit 1
+      fi
+    done < "$key_file"
+
+    echo "SSH public keys synchronized."
+  SCRIPT
+
+  ssh_authorized_keys_payload = base64encode(replace(local.ssh_authorized_keys_script, "\r", ""))
+
   nodes = {
     "k3s-master-pve01" = {
       node      = "pve01"
@@ -298,4 +364,29 @@ output "node_addresses" {
 output "vm_ids" {
   description = "Proxmox VM IDs for the six K3s nodes."
   value       = { for name, vm in proxmox_virtual_environment_vm.k3s : name => vm.vm_id }
+}
+
+resource "terraform_data" "ssh_authorized_keys" {
+  for_each = local.nodes
+
+  triggers_replace = {
+    keys_hash = sha256(local.ssh_authorized_keys_payload)
+  }
+
+  lifecycle {
+    replace_triggered_by = [proxmox_virtual_environment_vm.k3s[each.key]]
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "qm guest exec ${each.value.vm_id} --synchronous 1 --timeout 120 -- /bin/bash -lc 'printf %s ${local.ssh_authorized_keys_payload} | base64 -d | /bin/bash' | python3 -c 'import json,sys; result=json.load(sys.stdin); sys.stdout.write(result.get(\"out-data\", \"\")); sys.stderr.write(result.get(\"err-data\", \"\")); sys.exit(result.get(\"exitcode\", 1))'"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = "${each.value.node}${local.proxmox_ssh_domain}"
+      user        = var.ssh_username
+      private_key = file(pathexpand(var.ssh_private_key_path))
+    }
+  }
 }

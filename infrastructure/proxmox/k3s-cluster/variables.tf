@@ -20,6 +20,17 @@ variable "ssh_public_key" {
   description = "Public SSH key installed for the ubuntu user."
 }
 
+variable "additional_ssh_public_keys" {
+  type        = list(string)
+  description = "Additional public SSH keys installed for the ubuntu user."
+  default     = []
+
+  validation {
+    condition     = alltrue([for key in var.additional_ssh_public_keys : trimspace(key) != ""])
+    error_message = "additional_ssh_public_keys must not contain empty keys."
+  }
+}
+
 variable "image_node" {
   type        = string
   description = "Proxmox node used to download the Ubuntu Cloud Image."

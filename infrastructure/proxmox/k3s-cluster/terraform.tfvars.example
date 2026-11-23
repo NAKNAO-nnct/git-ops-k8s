@@ -2,6 +2,7 @@ proxmox_endpoint     = "https://pve.example.invalid:8006/"
 ssh_username         = "root"
 ssh_private_key_path = "~/.ssh/id_ed25519"
 ssh_public_key       = "ssh-ed25519 REPLACE_ME"
+additional_ssh_public_keys = []
 
 primary_bridge  = "vmbr1"
 primary_cidr    = "192.0.2.0/24"

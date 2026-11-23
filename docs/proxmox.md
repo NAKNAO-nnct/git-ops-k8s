@@ -14,13 +14,15 @@
 ```powershell
 cd infrastructure\proxmox\k3s-cluster
 Copy-Item terraform.tfvars.example terraform.tfvars
-# terraform.tfvars の SSH 公開鍵と IP 候補を確認・修正する。
+# terraform.tfvars の SSH 公開鍵（追加鍵は additional_ssh_public_keys）と IP 候補を確認・修正する。
 terraform init
 terraform validate
 terraform plan
 ```
 
 `terraform.tfvars` と Terraform state は Git に含めません。`plan` を確認するだけで VM は作成されません。VM 作成の `apply` は、IP の重複確認・Proxmox 権限確認・plan 差分確認後に別途明示的に実行してください。
+
+追加の公開鍵は `additional_ssh_public_keys` に指定します。Terraform は Proxmox SSH と QEMU Guest Agent を使って各ゲストの `/home/ubuntu/.ssh/authorized_keys` に鍵を追加するため、既存VMを再作成しません。鍵リストが変わった場合とVM作成後に同期が実行されます。既存鍵は保持するため、リストから削除してもゲストの鍵は削除されません。GitHub アカウントの鍵は `https://github.com/<user>.keys` から取得できます。
 
 適用後、Cloud-init が完了するまで待ち、bootstrap server で `sudo k3s kubectl get nodes -o wide` を実行して 3 server / 3 worker が `Ready` であることと、API VIP 経由の接続を確認します。Terraform は QEMU Guest Agent の IP 取得まで待ちますが、K3s の join 完了までは待ちません。kubeconfig は bootstrap server の `/etc/rancher/k3s/k3s.yaml` にあります。CNI の NetworkPolicy 強制と Ceph CSI が整うまではテナント workload を適用しないでください。
 
