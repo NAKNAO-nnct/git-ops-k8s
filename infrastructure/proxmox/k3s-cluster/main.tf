@@ -135,10 +135,11 @@ locals {
         /kube-vip manifest pod \
         --interface "$internal_iface" \
         --address '${var.api_vip}' \
+        --k8sConfigPath /etc/rancher/k3s/k3s.yaml \
         --controlplane \
         --arp \
         --leaderElection > /tmp/kube-vip.yaml
-      sed -i 's|/etc/kubernetes/admin.conf|/etc/rancher/k3s/k3s.yaml|g' /tmp/kube-vip.yaml
+      sed -i '/^    - manager$/a\    - --k8sConfigPath=/etc/rancher/k3s/k3s.yaml' /tmp/kube-vip.yaml
       install -d -m 0755 /var/lib/rancher/k3s/agent/pod-manifests
       install -m 0644 /tmp/kube-vip.yaml /var/lib/rancher/k3s/agent/pod-manifests/kube-vip.yaml
       wait_for_api "https://${var.api_vip}:6443/ping"
@@ -148,10 +149,11 @@ locals {
 
   cloud_init = {
     for name, node in local.nodes : name => "#cloud-config\n${yamlencode({
-      hostname         = name
-      manage_etc_hosts = true
-      package_update   = true
-      packages         = ["qemu-guest-agent", "curl", "ca-certificates"]
+      hostname            = name
+      manage_etc_hosts    = true
+      package_update      = true
+      ssh_authorized_keys = [trimspace(var.ssh_public_key)]
+      packages            = ["qemu-guest-agent", "curl", "ca-certificates"]
       write_files = [
         {
           path        = "/etc/rancher/k3s/config.yaml"
@@ -162,7 +164,7 @@ locals {
       ]
       runcmd = [
         ["systemctl", "enable", "--now", "qemu-guest-agent"],
-        ["bash", "-lc", local.bootstrap_scripts[name]]
+        ["bash", "-lc", replace(local.bootstrap_scripts[name], "\r", "")]
       ]
     })}"
   }

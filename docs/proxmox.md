@@ -6,6 +6,7 @@
 
 - `vmbr1` を通常通信と外向き通信に使い、デフォルトゲートウェイを設定します。
 - `vmbr0` を Ceph と Kubernetes のノード間通信に使います。この NIC にデフォルトゲートウェイは設定せず、K3s の `node-ip` と API VIP はこのネットワークに置きます。管理端末は内部ネットワークから API VIP へ接続します。API をインターネットへ公開しません。
+- kube-vip は static Pod として起動するため、bootstrap manifest で `/etc/rancher/k3s/k3s.yaml` をマウントし、`--k8sConfigPath` に明示します。ServiceAccount token に依存しません。
 - Cilium の VXLAN トンネルはノードの内部 IP を使います。ノード間で `vmbr0` 上の UDP 8472 を許可し、Ceph の通信も同じネットワーク上で必要な範囲に制限します。
 - 例にある IP は文書用の予約アドレスです。実環境の値は Gitignore 対象の `terraform.tfvars` にだけ保存し、適用前に Proxmox の稼働 VM IP、Cloud-init 固定 IP、その他の手動割当との重複を確認して予約してください。DHCP/IPAM がなければ読み取り専用インベントリだけで未使用を保証することはできません。
 - VM の OS / コンテナイメージ用ディスクは Ceph RBD 上に作成します。アプリの永続データは [Ceph CSI / StorageClass](ceph-csi.md) を別途構成して保存します。CNI の NetworkPolicy 強制、Ingress、バックアップもこの root の対象外です。workload を載せる前にこれらを準備・検証してください。
