@@ -69,12 +69,16 @@ locals {
         "node-name" = name
       },
       node.role == "server" ? {
-        "tls-san"                = [var.api_vip]
-        "node-taint"             = ["node-role.kubernetes.io/control-plane=true:NoSchedule"]
-        disable                  = ["traefik", "servicelb"]
-        "flannel-backend"        = "none"
+        "tls-san"     = [var.api_vip]
+        "node-taint"  = ["node-role.kubernetes.io/control-plane=true:NoSchedule"]
+        disable       = ["traefik", "servicelb"]
+        "kubelet-arg" = ["pod-manifest-path=/var/lib/rancher/k3s/agent/pod-manifests"]
+      } : {},
+      node.role == "server" ? {
+        "flannel-backend" = "none"
+      } : {},
+      node.role == "server" ? {
         "disable-network-policy" = true
-        "kubelet-arg"            = ["pod-manifest-path=/var/lib/rancher/k3s/agent/pod-manifests"]
       } : {},
       node.bootstrap ? {
         "cluster-init" = true
