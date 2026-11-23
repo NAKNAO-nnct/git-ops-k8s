@@ -2,6 +2,14 @@
 
 この repository は現在 tenant workload や DB 接続のサンプルを含みません。実アプリケーションを追加する際は、次の境界を個別に設計・検証してください。
 
+## K3s node networks and Cilium
+
+- `vmbr0` (`172.26.26.0/24`) は Ceph とノード間の内部通信に使います。K3s node IP、embedded etcd、Cilium VXLAN tunnel、API VIP はこのネットワークを通します。
+- `vmbr1` (`172.26.27.0/24`) はデフォルトゲートウェイを持ち、外向き通信に使います。Ceph NIC にはデフォルトゲートウェイを設定しません。
+- Cilium tunnel mode はノード間で UDP 8472 を必要とします。Ceph MON / OSD への接続とともに、ファイアウォールで必要な送信元・宛先だけ許可してください。
+- Kubernetes API VIP は内部ネットワーク上の管理用 endpoint です。管理端末からの TCP 6443 のみ許可し、WAN へ公開しません。
+- Pod の外向き通信が `vmbr1` から出ること、Cilium の masquerade 後に意図した送信元 IP になることを実環境で確認してください。
+
 ## Kubernetes network policies
 
 - Namespace ごとの default-deny と必要最小限の ingress/egress policy を使います。NetworkPolicy は CNI が enforcement して初めて機能します。

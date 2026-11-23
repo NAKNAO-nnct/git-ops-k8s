@@ -77,12 +77,12 @@ variable "primary_gateway" {
 
 variable "ceph_bridge" {
   type        = string
-  description = "Bridge for direct Ceph network access; it has no default gateway."
+  description = "Bridge for Ceph and cluster-internal traffic; it has no default gateway."
 }
 
 variable "ceph_cidr" {
   type        = string
-  description = "IPv4 CIDR used by the secondary Ceph VM NIC."
+  description = "IPv4 CIDR used by the internal Ceph and Kubernetes node network."
 
   validation {
     condition     = can(cidrnetmask(var.ceph_cidr))
@@ -92,7 +92,7 @@ variable "ceph_cidr" {
 
 variable "api_vip" {
   type        = string
-  description = "Reserved IPv4 address for the K3s API endpoint on the primary network."
+  description = "Reserved IPv4 address for the internal K3s API endpoint on the Ceph network."
 
   validation {
     condition     = can(regex("^[0-9]{1,3}(\\.[0-9]{1,3}){3}$", var.api_vip)) && can(cidrhost("${var.api_vip}/32", 0))

@@ -8,17 +8,17 @@
 infrastructure/proxmox/k3s-cluster/  3 K3s server + 3 worker VMs
 infrastructure/proxmox/             generic Cloud-init VM root
 bootstrap/argocd/                     Argo CD namespace bootstrap
-docs/                                 Proxmox、network、Argo CD 手順
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
+docs/                                 Proxmox、network、Cilium、Argo CD 手順
 ```
 
 各 Proxmox host に server 1 台（2 vCPU / 4 GiB / 40 GiB disk）と worker 1 台（8 vCPU / 16 GiB / 64 GiB disk）を作成します。VM boot disk は Ceph RBD 上です。server は embedded etcd と kube-vip API VIP を使い、Ubuntu 26.04 LTS Cloud Image から起動します。VM 作成前に [Proxmox 手順](docs/proxmox.md)を確認してください。
 
 ## 構築順序
 
-1. VM の IP、VMID、Proxmox 権限と Ceph datastore を確認します。
+1. VM の IP、API VIP、DHCP 除外、VMID、Proxmox 権限と Ceph datastore を確認します。
 2. `infrastructure/proxmox/k3s-cluster/` で `terraform init`、`validate`、`plan` を実行し、差分を確認してから明示的に `apply` します。
-3. 3 server と 3 worker が `Ready` になることを確認し、CNI / NetworkPolicy enforcement を準備します。
+3. [Cilium の導入手順](docs/cilium.md)に従って Cilium を導入します。Flannel は無効化されるため、導入前のノードは `NotReady` のままです。
 4. [Ceph CSI の導入手順](docs/ceph-csi.md)に従い、RBD / CephFS CSI と StorageClass を構成・検証します。
 5. [Argo CD の導入手順](docs/argocd.md)に従って Argo CD を bootstrap します。
 6. 実際に運用するアプリケーションを決めた後、Git repository と Argo CD Application を追加します。サンプル workload は現在含まれていません。

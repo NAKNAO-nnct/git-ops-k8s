@@ -4,8 +4,9 @@
 
 `infrastructure/proxmox/k3s-cluster/` は、3 台の Proxmox ホストそれぞれに K3s server 1 台と worker 1 台を作成します。server は 2 vCPU / 4 GiB / 40 GiB disk、worker は 8 vCPU / 16 GiB / 64 GiB disk です。VM boot disk は Ceph RBD 上です。server は `NoSchedule` taint を持ち、アプリの配置先は worker に限定します。Ubuntu 26.04 Cloud Image から VM を作成し、K3s の 3 server embedded-etcd 構成と kube-vip による API VIP を設定します。
 
-- `vmbr1` を通常通信・外部通信・Kubernetes API VIP 用に使い、デフォルトゲートウェイを設定します。
-- `vmbr0` を Ceph 用 NIC に使います。この NIC にデフォルトゲートウェイは設定しません。
+- `vmbr1` を通常通信と外向き通信に使い、デフォルトゲートウェイを設定します。
+- `vmbr0` を Ceph と Kubernetes のノード間通信に使います。この NIC にデフォルトゲートウェイは設定せず、K3s の `node-ip` と API VIP はこのネットワークに置きます。管理端末は内部ネットワークから API VIP へ接続します。API をインターネットへ公開しません。
+- Cilium の VXLAN トンネルはノードの内部 IP を使います。ノード間で `vmbr0` 上の UDP 8472 を許可し、Ceph の通信も同じネットワーク上で必要な範囲に制限します。
 - 例にある IP は文書用の予約アドレスです。実環境の値は Gitignore 対象の `terraform.tfvars` にだけ保存し、適用前に Proxmox の稼働 VM IP、Cloud-init 固定 IP、その他の手動割当との重複を確認して予約してください。DHCP/IPAM がなければ読み取り専用インベントリだけで未使用を保証することはできません。
 - VM の OS / コンテナイメージ用ディスクは Ceph RBD 上に作成します。アプリの永続データは [Ceph CSI / StorageClass](ceph-csi.md) を別途構成して保存します。CNI の NetworkPolicy 強制、Ingress、バックアップもこの root の対象外です。workload を載せる前にこれらを準備・検証してください。
 

@@ -65,14 +65,16 @@ locals {
     for name, node in local.nodes : name => yamlencode(merge(
       {
         token       = random_password.k3s_token.result
-        "node-ip"   = split("/", var.node_addresses[name].primary)[0]
+        "node-ip"   = split("/", var.node_addresses[name].ceph)[0]
         "node-name" = name
       },
       node.role == "server" ? {
-        "tls-san"     = [var.api_vip]
-        "node-taint"  = ["node-role.kubernetes.io/control-plane=true:NoSchedule"]
-        disable       = ["traefik", "servicelb"]
-        "kubelet-arg" = ["pod-manifest-path=/var/lib/rancher/k3s/agent/pod-manifests"]
+        "tls-san"                = [var.api_vip]
+        "node-taint"             = ["node-role.kubernetes.io/control-plane=true:NoSchedule"]
+        disable                  = ["traefik", "servicelb"]
+        "flannel-backend"        = "none"
+        "disable-network-policy" = true
+        "kubelet-arg"            = ["pod-manifest-path=/var/lib/rancher/k3s/agent/pod-manifests"]
       } : {},
       node.bootstrap ? {
         "cluster-init" = true
@@ -117,9 +119,9 @@ locals {
 %{endif~}
 %{endif~}
 %{if node.role == "server"~}
-      primary_iface="$(ip -o -4 addr show | awk -v ip='${split("/", var.node_addresses[name].primary)[0]}' '$4 ~ ("^" ip "/") { print $2; exit }')"
-      if [ -z "$primary_iface" ]; then
-        echo "Could not identify the primary interface for ${name}" >&2
+      internal_iface="$(ip -o -4 addr show | awk -v ip='${split("/", var.node_addresses[name].ceph)[0]}' '$4 ~ ("^" ip "/") { print $2; exit }')"
+      if [ -z "$internal_iface" ]; then
+        echo "Could not identify the internal interface for ${name}" >&2
         exit 1
       fi
 
@@ -127,7 +129,7 @@ locals {
       /usr/local/bin/k3s ctr images pull "$kube_vip_image"
       /usr/local/bin/k3s ctr run --rm --net-host "$kube_vip_image" kube-vip \
         /kube-vip manifest pod \
-        --interface "$primary_iface" \
+        --interface "$internal_iface" \
         --address '${var.api_vip}' \
         --controlplane \
         --arp \
@@ -263,15 +265,16 @@ resource "proxmox_virtual_environment_vm" "k3s" {
           cidrnetmask(address.ceph) == cidrnetmask(var.ceph_cidr) &&
           cidrsubnet(address.ceph, 0, 0) == cidrsubnet(var.ceph_cidr, 0, 0)
         ]) &&
-        cidrnetmask("${var.api_vip}/${split("/", var.primary_cidr)[1]}") == cidrnetmask(var.primary_cidr) &&
-        cidrsubnet("${var.api_vip}/${split("/", var.primary_cidr)[1]}", 0, 0) == cidrsubnet(var.primary_cidr, 0, 0) &&
+        cidrsubnet(var.primary_cidr, 0, 0) != cidrsubnet(var.ceph_cidr, 0, 0) &&
+        cidrnetmask("${var.api_vip}/${split("/", var.ceph_cidr)[1]}") == cidrnetmask(var.ceph_cidr) &&
+        cidrsubnet("${var.api_vip}/${split("/", var.ceph_cidr)[1]}", 0, 0) == cidrsubnet(var.ceph_cidr, 0, 0) &&
         cidrnetmask("${var.primary_gateway}/${split("/", var.primary_cidr)[1]}") == cidrnetmask(var.primary_cidr) &&
         cidrsubnet("${var.primary_gateway}/${split("/", var.primary_cidr)[1]}", 0, 0) == cidrsubnet(var.primary_cidr, 0, 0) &&
-        !contains([for address in values(var.node_addresses) : split("/", address.primary)[0]], var.api_vip) &&
+        !contains([for address in values(var.node_addresses) : split("/", address.ceph)[0]], var.api_vip) &&
         !contains([for address in values(var.node_addresses) : split("/", address.primary)[0]], var.primary_gateway) &&
         var.api_vip != var.primary_gateway
       )
-      error_message = "Node IPs and the API VIP must be unique host addresses in their configured subnets, and node IPs must not use the primary gateway."
+      error_message = "Primary and internal networks must differ; node IPs and the API VIP must be unique addresses in their configured subnets."
     }
   }
 }

@@ -9,7 +9,7 @@ primary_gateway = "192.0.2.1"
 ceph_bridge     = "vmbr0"
 ceph_cidr       = "198.51.100.0/24"
 
-api_vip = "192.0.2.206"
+api_vip = "198.51.100.206"
 
 # Documentation-only addresses. Replace these with unique, reserved addresses before applying.
 node_addresses = {
