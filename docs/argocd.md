@@ -25,8 +25,8 @@ kubectl -n argocd port-forward service/argocd-server 8080:443
 
 ブラウザーで `https://127.0.0.1:8080` を開きます。初期 `admin` password は `argocd-initial-admin-secret` にあります。取得・変更後の認証情報は安全な secret manager 等に保存し、Git やログに残さないでください。
 
-実際のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した Argo CD `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
+Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
 ## GitOps configuration
 
-Repository、`AppProject`、`Application` は Git 上の manifest を正として管理し、UI は状態確認や一時的な操作に使うことを推奨します。Private repository の認証情報を平文の manifest に含めず、SOPS や External Secrets 等の secret 管理方法を決めてから登録してください。repository URL、branch、manifest path、認証方式が決まるまでは repository を登録しません。
+Repository、`AppProject`、`Application` は Git 上の manifest を正として管理し、UI は状態確認や一時的な操作に使うことを推奨します。Cloudflare Tunnel Application は公開 repository の `main` branch を参照するため、repository credentials は不要です。Private repository の認証情報を平文の manifest に含めず、SOPS や External Secrets 等の secret 管理方法を決めてから登録してください。

@@ -8,6 +8,7 @@
 infrastructure/proxmox/k3s-cluster/  3 K3s server + 3 worker VMs
 infrastructure/proxmox/             generic Cloud-init VM root
 bootstrap/argocd/                     Argo CD namespace bootstrap
+bootstrap/cloudflared/                Cloudflare Tunnel connector workload
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
 docs/                                 Proxmox、network、Cilium、Argo CD 手順
 ```
@@ -21,7 +22,8 @@ docs/                                 Proxmox、network、Cilium、Argo CD 手�
 3. [Cilium の導入手順](docs/cilium.md)に従って Cilium を導入します。Flannel は無効化されるため、導入前のノードは `NotReady` のままです。
 4. [Ceph CSI の導入手順](docs/ceph-csi.md)に従い、RBD / CephFS CSI と StorageClass を構成・検証します。
 5. [Argo CD の導入手順](docs/argocd.md)に従って Argo CD を bootstrap します。
-6. 実際に運用するアプリケーションを決めた後、Git repository と Argo CD Application を追加します。サンプル workload は現在含まれていません。
+6. [Cloudflare Tunnel の手順](docs/cloudflare-tunnel.md)に従って、Argo CD 管理画面への安全な外部アクセスを構成できます。
+7. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。サンプル tenant workload は現在含まれていません。
 
 ## 運用上の注意
 
