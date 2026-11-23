@@ -27,6 +27,25 @@ kubectl -n argocd port-forward service/argocd-server 8080:443
 
 Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
+## GitHub SSO
+
+組織所有の GitHub OAuth App を作成し、以下を設定します。Wildcard URI と Device Flow は不要です。
+
+- Homepage URL: `https://argocd.wantan.men`
+- Authorization callback URL: `https://argocd.wantan.men/api/dex/callback`
+
+Client secret は Git に保存せず、PowerShell の secure prompt から Secret として登録します。その後、GitHub connector の base config を適用します。
+
+```powershell
+.\bootstrap\argocd\set-github-sso-secret.ps1
+kubectl apply -f bootstrap/argocd/github-sso-config.yaml
+.\bootstrap\argocd\set-github-sso-admin-team.ps1
+```
+
+`Yamada-Factory` の組織メンバーは read-only、入力したチームのメンバーは Argo CD admin になります。チーム slug は public repository に含めず、secure prompt から `argocd-rbac-cm` に設定します。初回ログイン時には GitHub の OAuth 許可が必要です。組織の OAuth app policy によっては、別途 OAuth App の承認も必要になります。この構成は既存のローカル `admin` アカウントを無効化しません。復旧用として残し、初期 password は安全な場所に保存してください。
+
+Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
+
 ## GitOps configuration
 
 Repository、`AppProject`、`Application` は Git 上の manifest を正として管理し、UI は状態確認や一時的な操作に使うことを推奨します。Cloudflare Tunnel Application は公開 repository の `main` branch を参照するため、repository credentials は不要です。Private repository の認証情報を平文の manifest に含めず、SOPS や External Secrets 等の secret 管理方法を決めてから登録してください。
