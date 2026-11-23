@@ -142,8 +142,8 @@ variable "ubuntu_cloud_image_sha256" {
 
 variable "k3s_version" {
   type        = string
-  description = "Pinned K3s release installed on all six VMs."
-  default     = "v1.37.2+k3s1"
+  description = "Pinned K3s release installed on all six VMs; Kubernetes 1.36 is tested with the pinned Cilium release."
+  default     = "v1.36.6+k3s1"
 }
 
 variable "kube_vip_version" {

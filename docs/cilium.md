@@ -12,22 +12,21 @@ The K3s configuration disables Flannel and K3s' built-in network policy controll
 
 ## Install
 
-After applying the K3s VMs, set `CILIUM_VERSION` to a Cilium release compatible with the configured K3s/Kubernetes release. Confirm compatibility before installation; the K3s version is configured in `infrastructure/proxmox/k3s-cluster/variables.tf`.
+The pinned pair is K3s `v1.36.6+k3s1` (Kubernetes `v1.36.6`) and Cilium `1.20.5`. Cilium's compatibility table lists Kubernetes 1.36 as E2E tested. Recheck the [compatibility table](https://docs.cilium.io/en/stable/network/kubernetes/compatibility/) when upgrading either version.
 
 Run the install on the initial K3s server, where the generated kubeconfig is available:
 
 ```sh
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-: "${CILIUM_VERSION:?Set a Cilium release compatible with the configured K3s version}"
 cilium install \
-  --version "$CILIUM_VERSION" \
-  --set ipam.mode=kubernetes \
+  --version 1.20.5 \
+  --set ipam.operator.clusterPoolIPv4PodCIDRList=10.42.0.0/16 \
   --set routingMode=tunnel \
   --set tunnelProtocol=vxlan \
   --set kubeProxyReplacement=false
 ```
 
-If installing from another administrative host, copy the kubeconfig securely and set its API server endpoint to `https://172.26.26.206:6443`. Kubernetes IPAM uses the Pod CIDRs assigned to nodes by K3s. K3s' kube-proxy remains enabled. Do not deploy tenant workloads until Cilium reports ready and all six nodes are `Ready`.
+If installing from another administrative host, copy the kubeconfig securely and set its API server endpoint to `https://172.26.26.206:6443`. Cilium's cluster pool is explicitly matched to K3s' default Pod CIDR (`10.42.0.0/16`). K3s' kube-proxy remains enabled. Do not deploy tenant workloads until Cilium reports ready and all six nodes are `Ready`.
 
 ```sh
 cilium status --wait
