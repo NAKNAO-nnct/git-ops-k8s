@@ -7,8 +7,11 @@ Cloudflared runs inside Kubernetes and creates an outbound-only Cloudflare Tunne
 1. Create a remotely-managed Cloudflare Tunnel and name it `k3s-argocd`.
 2. In the tunnel's public hostnames, add `argocd.wantan.men` with service `https://argocd-server.argocd.svc.cluster.local:443`.
 3. Enable **No TLS Verify** for that origin. Argo CD's default in-cluster certificate is self-signed; this setting applies only to the cloudflared-to-Argo CD connection. Public browser traffic still uses HTTPS at Cloudflare.
+
 4. Protect `argocd.wantan.men` with Cloudflare Access. You can use an existing wildcard application only if its policies are intended to cover this hostname; otherwise, create an exact-hostname self-hosted application with a restrictive Allow policy for the intended administrators and no Bypass policy. Cloudflare documents that the more-specific application path takes precedence and does not inherit the wildcard application's policies.
 5. Select the intended identity provider and an appropriately short session duration for this administrative application. Do not enable instant authentication unless intentionally desired.
+
+If Cloudflare cannot create the DNS record because that hostname already exists, verify that the existing record is no longer needed, then update its target to `<TUNNEL-ID>.cfargotunnel.com` and keep it proxied. Do not create a duplicate record.
 
 If another Access application uses a wildcard hostname, verify which application is selected and that any Bypass policy is intentional for this administrative endpoint. Use Cloudflare's Access policy tester and test the hostname from both an allowed and an unauthenticated session. Require MFA through Cloudflare Access or the selected identity provider where available; account-wide authentication settings must be reviewed separately.
 
