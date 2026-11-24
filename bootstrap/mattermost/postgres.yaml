@@ -49,6 +49,8 @@ spec:
           image: postgres:17@sha256:e711be2c7ff64c9eb8883fc87571621be6caa2f943d825a49e5d20ac5b0221d7
           imagePullPolicy: IfNotPresent
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_DB
@@ -95,7 +97,7 @@ spec:
             readOnlyRootFilesystem: true
           volumeMounts:
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
             - name: init
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
