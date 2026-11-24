@@ -7,8 +7,9 @@
 - K3s cluster が起動し、全 node が `Ready`。
 - 使用する Ceph version が Ceph-CSI release の対応範囲にあること。
 - node から `vmbr0` 経由で Ceph MON の TCP 3300（または v1 protocol の 6789）、OSD の TCP 6800-7300 に到達できること。
+- `aes256k` CephX key を使う場合、kernel RBD/CephFS client を含む全 node の kernel が 7.0 以降であること。
 - 専用の RBD pool があること。CephFS を使う場合は filesystem と active MDS があり、CSI 用 subvolume group を作成できること。
-- RBD / CephFS それぞれの least-privilege CephX user を作成すること。`client.admin` は使わないでください。[Ceph-CSI capabilities](https://github.com/ceph/ceph-csi/blob/v3.18.1/docs/capabilities.md)を参照してください。
+- RBD / CephFS それぞれの least-privilege CephX user を作成すること。`client.admin` は使わないでください。[Ceph-CSI capabilities](https://github.com/ceph/ceph-csi/blob/v3.17.1/docs/capabilities.md)を参照してください。
 - 以下の Kubernetes API 操作に cluster-admin 権限があること。CSI node plugin は privileged component として動作します。
 
 Ceph-CSI Operator `v1.1.0` は Kubernetes 1.32 以降をサポートします。all-in-one manifest が Operator と CRD を作成し、`Driver` resource が RBD / CephFS driver を有効にします。
@@ -20,20 +21,26 @@ set -e
 RBD_POOL=REPLACE_WITH_RBD_POOL
 FS_NAME=REPLACE_WITH_CEPHFS_NAME
 SUBVOL_GROUP=csi
+KEY_DIR=/secure/path
+mkdir -p "$KEY_DIR"
 umask 077
 
-ceph auth get-or-create --key-type=aes client.csi-rbd \
-  mgr "profile rbd pool=${RBD_POOL}" \
-  osd "profile rbd pool=${RBD_POOL}" \
-  mon "profile rbd" >/dev/null
-rbd_key=$(ceph auth get-key client.csi-rbd) && printf '%s' "$rbd_key" > /secure/path/csi-rbd.key
+ceph-authtool "${KEY_DIR}/csi-rbd.keyring" --create-keyring --gen-key \
+  --name client.csi-rbd --key-type aes256k \
+  --cap mon "profile rbd" \
+  --cap mgr "profile rbd pool=${RBD_POOL}" \
+  --cap osd "profile rbd pool=${RBD_POOL}"
+ceph auth import -i "${KEY_DIR}/csi-rbd.keyring" >/dev/null
+ceph auth print-key client.csi-rbd > "${KEY_DIR}/csi-rbd.key"
 
-ceph auth get-or-create --key-type=aes client.csi-cephfs \
-  mgr 'allow rw' \
-  osd "allow rwx tag cephfs metadata=${FS_NAME}, allow rw tag cephfs data=${FS_NAME}" \
-  mds "allow r fsname=${FS_NAME} path=/volumes, allow rws fsname=${FS_NAME} path=/volumes/${SUBVOL_GROUP}" \
-  mon "allow r fsname=${FS_NAME}" >/dev/null
-cephfs_key=$(ceph auth get-key client.csi-cephfs) && printf '%s' "$cephfs_key" > /secure/path/csi-cephfs.key
+ceph-authtool "${KEY_DIR}/csi-cephfs.keyring" --create-keyring --gen-key \
+  --name client.csi-cephfs --key-type aes256k \
+  --cap mon "allow r fsname=${FS_NAME}" \
+  --cap mgr "allow rw" \
+  --cap osd "allow rwx tag cephfs metadata=${FS_NAME}, allow rw tag cephfs data=${FS_NAME}" \
+  --cap mds "allow r fsname=${FS_NAME} path=/volumes, allow rws fsname=${FS_NAME} path=/volumes/${SUBVOL_GROUP}"
+ceph auth import -i "${KEY_DIR}/csi-cephfs.keyring" >/dev/null
+ceph auth print-key client.csi-cephfs > "${KEY_DIR}/csi-cephfs.key"
 ```
 
 ## Operator と driver の導入
@@ -46,11 +53,15 @@ kubectl get nodes
 ```
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/ceph/ceph-csi-operator/v1.1.0/deploy/all-in-one/install.yaml
+kubectl apply --server-side -f https://raw.githubusercontent.com/ceph/ceph-csi-operator/v1.1.0/deploy/all-in-one/install.yaml
 kubectl -n ceph-csi-operator-system rollout status deployment/ceph-csi-operator-controller-manager --timeout=5m
+kubectl apply -f bootstrap/ceph-csi/image-set.yaml
 kubectl apply -f bootstrap/ceph-csi/drivers.yaml
 kubectl -n ceph-csi-operator-system get pods
 ```
+
+`install.yaml` の CRD schema は大きいため、通常の client-side `kubectl apply` では annotation のサイズ制限に達する場合があります。server-side apply を使ってください。
+この cluster の VM CPU は `x86-64-v2-AES` のため、driver manifest は v3.17.1 plugin image を使います。v3.17.1 は Linux kernel 7.0 以降での AES256K key と Kubernetes 1.36 をサポートします。[Release notes](https://github.com/ceph/ceph-csi/releases/tag/v3.17.1)を参照してください。
 
 ## Ceph 接続と StorageClass
 

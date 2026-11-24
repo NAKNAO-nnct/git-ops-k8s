@@ -3,9 +3,15 @@ kind: Driver
 metadata:
   name: rbd.csi.ceph.com
   namespace: ceph-csi-operator-system
+spec:
+  imageSet:
+    name: ceph-csi-v317-images
 ---
 apiVersion: csi.ceph.io/v1
 kind: Driver
 metadata:
   name: cephfs.csi.ceph.com
   namespace: ceph-csi-operator-system
+spec:
+  imageSet:
+    name: ceph-csi-v317-images
