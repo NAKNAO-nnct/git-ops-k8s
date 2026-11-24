@@ -6,5 +6,3 @@ metadata:
 spec:
   cephConnectionRef:
     name: homelab-ceph
-  cephFs:
-    subVolumeGroup: csi

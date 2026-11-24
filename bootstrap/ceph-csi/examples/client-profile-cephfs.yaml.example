@@ -1,0 +1,10 @@
+apiVersion: csi.ceph.io/v1
+kind: ClientProfile
+metadata:
+  name: homelab-cephfs
+  namespace: ceph-csi-operator-system
+spec:
+  cephConnectionRef:
+    name: homelab-cephfs
+  cephFs:
+    subVolumeGroup: csi

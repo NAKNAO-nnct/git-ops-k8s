@@ -70,7 +70,9 @@ cluster 固有の設定と credentials は Gitignore 対象の root `secrets/` �
 ```sh
 mkdir -p secrets/ceph-csi
 cp bootstrap/ceph-csi/examples/ceph-connection.yaml.example secrets/ceph-csi/ceph-connection.yaml
+cp bootstrap/ceph-csi/examples/ceph-connection-cephfs.yaml.example secrets/ceph-csi/ceph-connection-cephfs.yaml
 cp bootstrap/ceph-csi/examples/client-profile.yaml.example secrets/ceph-csi/client-profile.yaml
+cp bootstrap/ceph-csi/examples/client-profile-cephfs.yaml.example secrets/ceph-csi/client-profile-cephfs.yaml
 cp bootstrap/ceph-csi/examples/storageclass-rbd.yaml.example secrets/ceph-csi/storageclass-rbd.yaml
 cp bootstrap/ceph-csi/examples/storageclass-cephfs.yaml.example secrets/ceph-csi/storageclass-cephfs.yaml
 ```
@@ -79,8 +81,9 @@ cp bootstrap/ceph-csi/examples/storageclass-cephfs.yaml.example secrets/ceph-csi
 
 - `ceph-connection.yaml` に、Ceph network から到達できる MON endpoint を設定します。
 - StorageClass の RBD pool 名と CephFS filesystem 名を実値に置換します。placeholder のまま適用しないでください。
-- `ClientProfile` 名の `homelab-ceph` と StorageClass の `clusterID` は一致させます。変更する場合は両方を変更してください。
-- CephFS の `subVolumeGroup` は `csi` です。存在しない場合は Ceph 側で先に作成します。
+- `ClientProfile` 名と StorageClass の `clusterID` は一致させます。変更する場合は両方を変更してください。
+- CephFS は kernel mount が MON v1 protocol を使うため、CephFS 用 `CephConnection` は MON の TCP 6789 を指定します。RBD 用 connection は v2 protocol の TCP 3300 を使えます。
+- RBD 用 `ClientProfile` / StorageClass の `clusterID` は `homelab-ceph`、CephFS 用は `homelab-cephfs` です。CephFS の `subVolumeGroup` は `csi` です。存在しない場合は Ceph 側で先に作成します。
 
 CephX key file はキーだけを含む内容にし、秘密値をコマンド引数や Git に書きません。上記で作成した key file を安全に `secrets/ceph-csi/rbd.key` と `secrets/ceph-csi/cephfs.key` へ転送します。Secret の `userID` には `client.` prefix を付けません。
 
@@ -99,14 +102,16 @@ kubectl -n ceph-csi-operator-system create secret generic csi-cephfs-secret \
 
 ```sh
 kubectl apply -f secrets/ceph-csi/ceph-connection.yaml
+kubectl apply -f secrets/ceph-csi/ceph-connection-cephfs.yaml
 kubectl apply -f secrets/ceph-csi/client-profile.yaml
+kubectl apply -f secrets/ceph-csi/client-profile-cephfs.yaml
 kubectl apply -f secrets/ceph-csi/storageclass-rbd.yaml
 kubectl apply -f secrets/ceph-csi/storageclass-cephfs.yaml
 kubectl get storageclass ceph-rbd cephfs
 kubectl get csidriver
 ```
 
-アプリケーションは PVC で `ceph-rbd`（通常 `ReadWriteOnce`）または `cephfs`（`ReadWriteMany`）を指定します。PVC の要求容量は論理容量であり、物理容量の予約ではありません。Ceph pool を監視し、実際の PVC provision / mount をテストしてから workload を載せてください。両 StorageClass は `Retain` なので、PVC 削除だけでは Ceph 上のデータは自動削除されません。
+アプリケーションは PVC の `storageClassName` に `ceph-rbd`（通常 `ReadWriteOnce`）または `cephfs`（`ReadWriteMany`）を明示します。既定 StorageClass は引き続き `local-path` です。PVC の要求容量は論理容量であり、物理容量の予約ではありません。Ceph pool を監視し、実際の PVC provision / mount をテストしてから workload を載せてください。両 Ceph StorageClass は `Retain` なので、PVC 削除だけでは Ceph 上のデータは自動削除されません。
 
 CSI はアプリの永続データを Ceph に置きますが、worker の 64 GiB boot disk は引き続き OS、containerd image、ログ、`emptyDir` などに使われます。node の ephemeral storage が不足しないよう `nodefs` / image 使用量を監視してください。また、StorageClass や共有 CephX user だけでは tenant 間の強いデータ境界にならないため、実運用で分離が必要なら pool / filesystem / CephX user と Kubernetes の権限を合わせて設計します。
 
