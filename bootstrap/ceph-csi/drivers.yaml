@@ -5,7 +5,7 @@ metadata:
   namespace: ceph-csi-operator-system
 spec:
   imageSet:
-    name: ceph-csi-v317-images
+    name: ceph-csi-v3182-images
 ---
 apiVersion: csi.ceph.io/v1
 kind: Driver
@@ -14,4 +14,4 @@ metadata:
   namespace: ceph-csi-operator-system
 spec:
   imageSet:
-    name: ceph-csi-v317-images
+    name: ceph-csi-v3182-images

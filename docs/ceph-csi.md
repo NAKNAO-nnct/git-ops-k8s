@@ -9,7 +9,7 @@
 - node から `vmbr0` 経由で Ceph MON の TCP 3300（または v1 protocol の 6789）、OSD の TCP 6800-7300 に到達できること。
 - `aes256k` CephX key を使う場合、kernel RBD/CephFS client を含む全 node の kernel が 7.0 以降であること。
 - 専用の RBD pool があること。CephFS を使う場合は filesystem と active MDS があり、CSI 用 subvolume group を作成できること。
-- RBD / CephFS それぞれの least-privilege CephX user を作成すること。`client.admin` は使わないでください。[Ceph-CSI capabilities](https://github.com/ceph/ceph-csi/blob/v3.17.1/docs/capabilities.md)を参照してください。
+- RBD / CephFS それぞれの least-privilege CephX user を作成すること。`client.admin` は使わないでください。[Ceph-CSI capabilities](https://github.com/ceph/ceph-csi/blob/v3.18.2/docs/capabilities.md)を参照してください。
 - 以下の Kubernetes API 操作に cluster-admin 権限があること。CSI node plugin は privileged component として動作します。
 
 Ceph-CSI Operator `v1.1.0` は Kubernetes 1.32 以降をサポートします。all-in-one manifest が Operator と CRD を作成し、`Driver` resource が RBD / CephFS driver を有効にします。
@@ -61,7 +61,7 @@ kubectl -n ceph-csi-operator-system get pods
 ```
 
 `install.yaml` の CRD schema は大きいため、通常の client-side `kubectl apply` では annotation のサイズ制限に達する場合があります。server-side apply を使ってください。
-この cluster の VM CPU は `x86-64-v2-AES` のため、driver manifest は v3.17.1 plugin image を使います。v3.17.1 は Linux kernel 7.0 以降での AES256K key と Kubernetes 1.36 をサポートします。[Release notes](https://github.com/ceph/ceph-csi/releases/tag/v3.17.1)を参照してください。
+この cluster の K3s VM は `x86-64-v3` CPU model を使い、driver manifest は Ceph-CSI v3.18.2 plugin image に固定しています。v3.18.2 への更新後、RBD の RWO PVC 書き込みと、異なる worker 間での CephFS RWX PVC の共有 read/write を確認しました。CPU model の変更だけでは CSI plugin image は更新されないため、別の release へ更新する場合は事前に互換性を確認し、PVC provision / mount を再検証してください。[Release notes](https://github.com/ceph/ceph-csi/releases/tag/v3.18.2)を参照してください。
 
 ## Ceph 接続と StorageClass
 
