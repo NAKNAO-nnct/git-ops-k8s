@@ -1,20 +1,4 @@
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-init
-data:
-  01-create-mattermost-user.sh: |
-    #!/bin/sh
-    set -eu
-    : "${MATTERMOST_DB_PASSWORD:?MATTERMOST_DB_PASSWORD is required}"
-    psql --set=ON_ERROR_STOP=1 \
-      --username="$POSTGRES_USER" \
-      --dbname="$POSTGRES_DB" <<SQL
-    CREATE ROLE mattermost LOGIN PASSWORD '${MATTERMOST_DB_PASSWORD}';
-    CREATE DATABASE mattermost OWNER mattermost;
-    SQL
----
-apiVersion: v1
 kind: Service
 metadata:
   name: postgres
@@ -44,10 +28,42 @@ spec:
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: postgres
           image: postgres:17@sha256:e711be2c7ff64c9eb8883fc87571621be6caa2f943d825a49e5d20ac5b0221d7
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 999
+            runAsNonRoot: true
+            runAsUser: 999
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+              if [ ! -s "$PGDATA/PG_VERSION" ]; then
+                pwfile="$(mktemp)"
+                trap 'rm -f "$pwfile"' EXIT
+                printf '%s\n' "$POSTGRES_PASSWORD" > "$pwfile"
+                initdb -D "$PGDATA" --username="$POSTGRES_USER" --pwfile="$pwfile" --auth-host=scram-sha-256 --auth-local=trust
+                rm -f "$pwfile"
+                trap - EXIT
+              fi
+              hba_rule='host all all 10.42.0.0/16 scram-sha-256'
+              if ! grep -Fxq "$hba_rule" "$PGDATA/pg_hba.conf"; then
+                printf '\n%s\n' "$hba_rule" >> "$PGDATA/pg_hba.conf"
+              fi
+              exec postgres -D "$PGDATA" -c "listen_addresses=*" -c unix_socket_directories=/tmp
           env:
             - name: PGDATA
               value: /var/lib/postgresql/data
@@ -60,11 +76,6 @@ spec:
                 secretKeyRef:
                   name: mattermost-db
                   key: POSTGRES_PASSWORD
-            - name: MATTERMOST_DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mattermost-db
-                  key: MATTERMOST_DB_PASSWORD
           ports:
             - name: postgres
               containerPort: 5432
@@ -74,7 +85,7 @@ spec:
               command:
                 - /bin/sh
                 - -ec
-                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+                - pg_isready -h 127.0.0.1 -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 30
@@ -83,7 +94,7 @@ spec:
               command:
                 - /bin/sh
                 - -ec
-                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+                - pg_isready -h 127.0.0.1 -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             periodSeconds: 10
             timeoutSeconds: 5
           resources:
@@ -93,28 +104,15 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
-          securityContext:
-            readOnlyRootFilesystem: true
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql
-            - name: init
-              mountPath: /docker-entrypoint-initdb.d
-              readOnly: true
             - name: tmp
               mountPath: /tmp
-            - name: run
-              mountPath: /var/run/postgresql
             - name: dshm
               mountPath: /dev/shm
       volumes:
-        - name: init
-          configMap:
-            name: postgres-init
-            defaultMode: 0555
         - name: tmp
-          emptyDir: {}
-        - name: run
           emptyDir: {}
         - name: dshm
           emptyDir:

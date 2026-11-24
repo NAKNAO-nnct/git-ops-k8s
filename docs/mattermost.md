@@ -14,7 +14,7 @@ kubectl create namespace mattermost --dry-run=client -o yaml | kubectl apply -f 
 kubectl apply -f bootstrap/argocd/applications/mattermost.yaml
 ```
 
-The script generates two independent 256-bit passwords in memory and sends the Secret through `kubectl` standard input without printing or writing either value. It refuses to overwrite an existing Secret; run it once before the database starts. Keep the Secret out of Git. The PostgreSQL init script uses the superuser only to create a dedicated, non-superuser `mattermost` role and database; initialization scripts run only when the database volume is empty.
+The script generates two independent 256-bit passwords in memory and sends the Secret through `kubectl` standard input without printing or writing either value. It refuses to overwrite an existing Secret; run it once before the database starts. Keep the Secret out of Git. PostgreSQL initializes an empty volume and allows SCRAM-authenticated connections from the K3s pod CIDR. Before Mattermost starts, its init container uses the secret-backed PostgreSQL superuser to idempotently create or update the dedicated, non-superuser `mattermost` role and database.
 
 In Argo CD, manually sync the `mattermost` Application. Automatic sync and pruning are intentionally disabled.
 
