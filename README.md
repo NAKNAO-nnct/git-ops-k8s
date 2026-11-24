@@ -1,6 +1,6 @@
 # Proxmox K3s platform
 
-3 台の Proxmox host 上に HA K3s cluster を構築し、Argo CD を GitOps の control plane として導入するための IaC と bootstrap 手順です。サンプル tenant workload と Laravel 管理アプリケーションは含めません。
+3 台の Proxmox host 上に HA K3s cluster を構築し、Argo CD を GitOps の control plane として導入するための IaC と bootstrap 手順です。サンプル workload として Mattermost を含みます。
 
 ## 構成
 
@@ -10,6 +10,7 @@ infrastructure/proxmox/             generic Cloud-init VM root
 bootstrap/argocd/                     Argo CD namespace bootstrap
 bootstrap/cloudflared/                Cloudflare Tunnel connector workload
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
+bootstrap/mattermost/                  Mattermost Team Edition sample workload
 docs/                                 Proxmox、network、Cilium、Argo CD 手順
 ```
 
@@ -23,7 +24,8 @@ docs/                                 Proxmox、network、Cilium、Argo CD 手�
 4. [Ceph CSI の導入手順](docs/ceph-csi.md)に従い、RBD / CephFS CSI と StorageClass を構成・検証します。
 5. [Argo CD の導入手順](docs/argocd.md)に従って Argo CD を bootstrap します。
 6. [Cloudflare Tunnel の手順](docs/cloudflare-tunnel.md)に従って、Argo CD 管理画面への安全な外部アクセスを構成できます。
-7. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。サンプル tenant workload は現在含まれていません。
+7. Mattermost のサンプル構成は [Mattermost 手順](docs/mattermost.md)に従って Argo CD に登録し、Cloudflare Tunnel に公開できます。
+8. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。
 
 ## 運用上の注意
 
