@@ -18,7 +18,7 @@ These Applications are intentionally manual-sync:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/metallb.yaml
-   argocd app sync metallb
+   argocd app sync metallb --sync-option CreateNamespace=true
    ```
 
 2. After MetalLB's CRDs and controller are ready, apply and sync its address configuration:
@@ -32,14 +32,14 @@ These Applications are intentionally manual-sync:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/traefik.yaml
-   argocd app sync traefik
+   argocd app sync traefik --sync-option CreateNamespace=true
    ```
 
 4. Apply and sync cert-manager. Wait for all cert-manager deployments and webhook to become ready:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/cert-manager.yaml
-   argocd app sync cert-manager
+   argocd app sync cert-manager --sync-option CreateNamespace=true
    ```
 
 5. Create a Cloudflare API token with `Zone:Read` and `DNS:Edit` access limited to `wantan.men`, `misosiru.uk`, and `yamada-factory.uk`. Then run:
@@ -53,7 +53,7 @@ These Applications are intentionally manual-sync:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/cert-manager-config.yaml
-   argocd app sync cert-manager-config
+   argocd app sync cert-manager-config --sync-option CreateNamespace=true
    ```
 
 7. Sync the existing Mattermost Application to add its `chat.wantan.men` Ingress and request a production certificate:
