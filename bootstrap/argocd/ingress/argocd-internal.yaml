@@ -6,6 +6,16 @@ metadata:
 spec:
   insecureSkipVerify: true
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true,Validate=false
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-server@kubernetescrd
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -13,8 +23,6 @@ metadata:
   namespace: argocd
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-cloudflare
-    traefik.ingress.kubernetes.io/service.serversscheme: https
-    traefik.ingress.kubernetes.io/service.serverstransport: argocd-argocd-server@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
