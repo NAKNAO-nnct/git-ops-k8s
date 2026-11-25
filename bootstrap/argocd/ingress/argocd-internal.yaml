@@ -19,10 +19,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - argocd.internal.misosiru.uk
-      secretName: argocd-internal-misosiru-uk-tls
+        - argocd.ingress.misosiru.uk
+      secretName: argocd-ingress-misosiru-uk-tls
   rules:
-    - host: argocd.internal.misosiru.uk
+    - host: argocd.ingress.misosiru.uk
       http:
         paths:
           - path: /

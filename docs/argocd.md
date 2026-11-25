@@ -25,7 +25,7 @@ kubectl -n argocd port-forward service/argocd-server 8080:443
 
 ブラウザーで `https://127.0.0.1:8080` を開きます。初期 `admin` password は `argocd-initial-admin-secret` にあります。取得・変更後の認証情報は安全な secret manager 等に保存し、Git やログに残さないでください。
 
-LAN からは `argocd.internal.misosiru.uk` を Traefik の VIP `172.26.27.240` に向けてアクセスできます。Ingress は `letsencrypt-cloudflare` で証明書を発行し、Argo CD の HTTPS service に接続します。Cloudflare の DNS レコードは DNS-only とし、Cloudflare Access は経由しないため、LAN 内からのアクセスにも Argo CD の認証が必要です。`argocd-internal-ingress` Application は `bootstrap/argocd/applications/argocd-internal-ingress.yaml` から登録して同期します。
+LAN からは `argocd.ingress.misosiru.uk` を Traefik の VIP `172.26.27.240` に向けてアクセスできます。Cloudflare の `*.ingress.misosiru.uk` は DNS-only の A レコードとして VIP を指し、Ingress は `letsencrypt-cloudflare` で証明書を発行して Argo CD の HTTPS service に接続します。Cloudflare Access は経由しないため、LAN 内からのアクセスにも Argo CD の認証が必要です。`argocd-internal-ingress` Application は `bootstrap/argocd/applications/argocd-internal-ingress.yaml` から登録して同期します。
 
 Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。Ingress / 証明書基盤の追加手順は[こちら](ingress.md)です。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
@@ -48,7 +48,7 @@ kubectl apply -f bootstrap/argocd/github-sso-config.yaml
 
 Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
 
-内部 Ingress は追加ホスト名であり、canonical URL と OAuth callback は引き続き `argocd.wantan.men` です。内部ホスト名から GitHub SSO を開始しても canonical host にリダイレクトされるため、内部ホスト名を維持したまま利用する場合はローカル `admin` アカウントを使用してください。
+Ingress ホスト名は追加ホストであり、canonical URL と OAuth callback は引き続き `argocd.wantan.men` です。`argocd.ingress.misosiru.uk` から GitHub SSO を開始しても canonical host にリダイレクトされるため、このホスト名を維持したまま利用する場合はローカル `admin` アカウントを使用してください。
 
 ## GitOps configuration
 
