@@ -25,7 +25,7 @@ kubectl -n argocd port-forward service/argocd-server 8080:443
 
 ブラウザーで `https://127.0.0.1:8080` を開きます。初期 `admin` password は `argocd-initial-admin-secret` にあります。取得・変更後の認証情報は安全な secret manager 等に保存し、Git やログに残さないでください。
 
-Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
+Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。Ingress / 証明書基盤の追加手順は[こちら](ingress.md)です。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
 ## GitHub SSO
 

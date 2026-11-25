@@ -18,14 +18,16 @@ The script generates two independent 256-bit passwords in memory and sends the S
 
 In Argo CD, manually sync the `mattermost` Application. Automatic sync and pruning are intentionally disabled.
 
-## Cloudflare Tunnel
+## Ingress and Cloudflare Tunnel
 
-The public hostname reuses the existing Cloudflare Tunnel and the current `*.wantan.men` Cloudflare Access policy. Add this public-hostname route to the remote-managed tunnel:
+The Mattermost Application includes an Ingress for `chat.wantan.men`, using Traefik and the `letsencrypt-cloudflare` ClusterIssuer. The Ingress becomes reachable through the Traefik LoadBalancer after a safe VIP is reserved and configured for MetalLB. For LAN clients to use this route, internal DNS must resolve `chat.wantan.men` to that VIP; the public DNS record should continue to target the Cloudflare Tunnel.
+
+The existing Cloudflare Tunnel route remains direct to Mattermost until the Ingress, certificate, and LAN route have been verified. It currently uses:
 
 - Hostname: `chat.wantan.men`
 - Service: `http://mattermost.mattermost.svc.cluster.local:8065`
 
-No public Kubernetes Service, NodePort, LoadBalancer, or inbound firewall rule is needed. Cloudflare terminates public HTTPS; the Tunnel connects to the in-cluster HTTP service. Mattermost is configured with `https://chat.wantan.men` as its Site URL.
+Once the Ingress path is verified, the remote-managed Tunnel origin can be changed to `http://traefik.traefik.svc.cluster.local:80`. Cloudflare terminates public HTTPS; the Tunnel connects to Traefik over in-cluster HTTP, while LAN clients can use HTTPS through the LoadBalancer. Do not enable an HTTP-to-HTTPS redirect at Traefik for this origin unless the Tunnel is also configured to connect to HTTPS.
 
 Cloudflare Access is an additional login gate before Mattermost. Users and native clients must satisfy the existing Access policy as well as Mattermost authentication.
 

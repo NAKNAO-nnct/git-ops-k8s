@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: 42.4.3
+    helm:
+      releaseName: traefik
+      valuesObject:
+        deployment:
+          replicas: 2
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 1
+        ingressClass:
+          enabled: true
+          isDefaultClass: false
+          name: traefik
+        service:
+          enabled: true
+          type: LoadBalancer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

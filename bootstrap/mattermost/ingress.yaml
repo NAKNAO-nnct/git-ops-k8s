@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mattermost
+  namespace: mattermost
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - chat.wantan.men
+      secretName: chat-wantan-men-tls
+  rules:
+    - host: chat.wantan.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mattermost
+                port:
+                  number: 8065

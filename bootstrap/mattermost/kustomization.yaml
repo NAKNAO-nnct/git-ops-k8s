@@ -6,3 +6,4 @@ resources:
   - postgres.yaml
   - storage.yaml
   - mattermost.yaml
+  - ingress.yaml
