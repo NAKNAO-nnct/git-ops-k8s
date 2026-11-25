@@ -11,8 +11,21 @@ spec:
     - hosts:
         - chat.wantan.men
       secretName: chat-wantan-men-tls
+    - hosts:
+        - chat.ingress.misosiru.uk
+      secretName: chat-ingress-misosiru-uk-tls
   rules:
     - host: chat.wantan.men
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mattermost
+                port:
+                  number: 8065
+    - host: chat.ingress.misosiru.uk
       http:
         paths:
           - path: /

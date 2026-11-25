@@ -58,7 +58,7 @@ These Applications are intentionally manual-sync:
    argocd app sync cert-manager-config --sync-option CreateNamespace=true
    ```
 
-7. Sync the existing Mattermost Application to add its `chat.wantan.men` Ingress and request a production certificate:
+7. Sync the existing Mattermost Application to add its `chat.wantan.men` and `chat.ingress.misosiru.uk` Ingress routes and request production certificates:
 
    ```powershell
    argocd app sync mattermost
@@ -66,7 +66,7 @@ These Applications are intentionally manual-sync:
 
 For a DNS-01 dry run, temporarily use the `letsencrypt-cloudflare-staging` ClusterIssuer on a test Certificate or Ingress before requesting a production certificate. The ACME email is omitted because it is optional; configure a monitored contact address if expiry notifications are desired.
 
-The Cloudflare solver covers zones managed by the Cloudflare token. Sakura Cloud DNS delegation and its `ingress.internal.*` names are not configured here. During initial setup, keep the public Cloudflare Tunnel route pointed directly at Mattermost until the Ingress, certificate, and LoadBalancer path are verified. After verification, set its origin to `http://traefik.traefik.svc.cluster.local:80`; the current `chat.wantan.men` route uses this Traefik origin.
+The Cloudflare solver covers zones managed by the Cloudflare token. Sakura Cloud DNS delegation and its `ingress.internal.*` names are not configured here. The Cloudflare wildcard `*.ingress.misosiru.uk` is DNS-only and points to the private Traefik VIP `172.26.27.240`; `chat.ingress.misosiru.uk` is therefore a direct LAN route, not a public Cloudflare Tunnel route. During initial setup, keep the public Cloudflare Tunnel route pointed directly at Mattermost until the Ingress, certificate, and LoadBalancer path are verified. After verification, set its origin to `http://traefik.traefik.svc.cluster.local:80`; the existing public `chat.wantan.men` route uses this Traefik origin.
 
 ## Verify
 

@@ -20,7 +20,7 @@ In Argo CD, manually sync the `mattermost` Application. Automatic sync and pruni
 
 ## Ingress and Cloudflare Tunnel
 
-The Mattermost Application includes an Ingress for `chat.wantan.men`, using Traefik and the `letsencrypt-cloudflare` ClusterIssuer. The Ingress becomes reachable through the Traefik LoadBalancer after a safe VIP is reserved and configured for MetalLB. For LAN clients to use this route, internal DNS must resolve `chat.wantan.men` to that VIP; the public DNS record should continue to target the Cloudflare Tunnel.
+The Mattermost Application includes Traefik Ingress routes for `chat.wantan.men` and `chat.ingress.misosiru.uk`, with separate certificates from the `letsencrypt-cloudflare` ClusterIssuer. The wildcard Cloudflare DNS record `*.ingress.misosiru.uk` points to the Traefik VIP `172.26.27.240`, so the new hostname is for direct LAN access. It bypasses Cloudflare Tunnel and Access; Mattermost authentication is still required. The canonical `MM_SERVICESETTINGS_SITEURL` remains `https://chat.wantan.men`.
 
 During initial setup, keep the Cloudflare Tunnel route direct to Mattermost until the Ingress, certificate, and LAN route have been verified. After validation, change the route to the shared Traefik service. The current route is:
 
@@ -29,7 +29,7 @@ During initial setup, keep the Cloudflare Tunnel route direct to Mattermost unti
 
 Cloudflare terminates public HTTPS; the Tunnel connects to Traefik over in-cluster HTTP, while LAN clients can use HTTPS through the LoadBalancer. Do not enable an HTTP-to-HTTPS redirect at Traefik for this origin unless the Tunnel is also configured to connect to HTTPS.
 
-Cloudflare Access is an additional login gate before Mattermost. Users and native clients must satisfy the existing Access policy as well as Mattermost authentication.
+For `chat.wantan.men`, Cloudflare Access is an additional login gate before Mattermost. Users and native clients must satisfy the existing Access policy as well as Mattermost authentication. The LAN-only `chat.ingress.misosiru.uk` alias does not pass through Cloudflare Access.
 
 ## Verification
 
@@ -39,4 +39,4 @@ kubectl -n mattermost rollout status deployment/mattermost --timeout=10m
 kubectl -n mattermost get pvc,pods,services
 ```
 
-Confirm both PVCs are `Bound` at 10 GiB, the Mattermost pod is Ready, and `https://chat.wantan.men` displays Mattermost after Cloudflare Access authentication. The first Mattermost account should be created by an intended administrator; review the account-creation setting after initial setup.
+Confirm both PVCs are `Bound` at 10 GiB, the Mattermost pod is Ready, `https://chat.wantan.men` displays Mattermost after Cloudflare Access authentication, and `https://chat.ingress.misosiru.uk` works from the LAN with a trusted certificate. The first Mattermost account should be created by an intended administrator; review the account-creation setting after initial setup.
