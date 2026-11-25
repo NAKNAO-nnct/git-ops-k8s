@@ -49,6 +49,8 @@ These Applications are intentionally manual-sync:
    ```
 
    The script reads the token securely and sends the Secret to `kubectl` over standard input. It does not write the token to Git or a file and refuses to replace an existing Secret.
+
+   Cloudflare tokens expire after the configured lifetime (this token is set to one year). Record the expiration date shown in Cloudflare and rotate the token before it expires. The setup script intentionally refuses to overwrite an existing Secret, so use the approved secret-rotation procedure when replacing it.
 6. Apply and sync the ClusterIssuer configuration:
 
    ```powershell
@@ -64,7 +66,7 @@ These Applications are intentionally manual-sync:
 
 For a DNS-01 dry run, temporarily use the `letsencrypt-cloudflare-staging` ClusterIssuer on a test Certificate or Ingress before requesting a production certificate. The ACME email is omitted because it is optional; configure a monitored contact address if expiry notifications are desired.
 
-The Cloudflare solver covers zones managed by the Cloudflare token. Sakura Cloud DNS delegation and its `ingress.internal.*` names are not configured here. Keep the existing public Cloudflare Tunnel route pointed directly at Mattermost until the Ingress, certificate, and LoadBalancer path are verified; then its origin can be changed to `http://traefik.traefik.svc.cluster.local:80`.
+The Cloudflare solver covers zones managed by the Cloudflare token. Sakura Cloud DNS delegation and its `ingress.internal.*` names are not configured here. During initial setup, keep the public Cloudflare Tunnel route pointed directly at Mattermost until the Ingress, certificate, and LoadBalancer path are verified. After verification, set its origin to `http://traefik.traefik.svc.cluster.local:80`; the current `chat.wantan.men` route uses this Traefik origin.
 
 ## Verify
 
