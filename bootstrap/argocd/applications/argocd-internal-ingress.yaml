@@ -12,6 +12,7 @@ spec:
       namespace: argocd
       jsonPointers:
         - /spec
+        - /metadata/labels
   source:
     repoURL: https://github.com/NAKNAO-nnct/git-ops-k8s.git
     targetRevision: main
