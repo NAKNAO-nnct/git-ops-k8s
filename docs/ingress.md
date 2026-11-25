@@ -6,9 +6,9 @@ The three Helm charts are pinned to Traefik `42.4.3`, MetalLB `0.16.2`, and cert
 
 ## Address reservation
 
-One VIP is enough for the shared Traefik service, regardless of the number of Ingresses or hostnames. The observed neighbor caches did not show a host at `172.26.27.240`, so it is a candidate, not proof that the address is free. Before adding an `IPAddressPool`, verify it is outside the DHCP pool or reserve it in DHCP/IPAM. Do not configure or advertise an unverified address.
+One VIP is enough for the shared Traefik service, regardless of the number of Ingresses or hostnames. The user confirmed that `172.26.27.240`-`172.26.27.245` are available; this configuration uses only `172.26.27.240/32` so other addresses are not allocated automatically. The L2 advertisement is restricted to `eth0`, the K3s VM interface on `vmbr1`.
 
-After confirming the VIP, add a MetalLB `IPAddressPool` containing only that address and an `L2Advertisement` in the `metallb-system` namespace. The Traefik Service is `LoadBalancer`; without a configured pool it will remain pending and will not advertise an address.
+The Traefik Service is `LoadBalancer` and receives the single reserved VIP from this pool.
 
 ## Install order
 
@@ -21,35 +21,42 @@ These Applications are intentionally manual-sync:
    argocd app sync metallb
    ```
 
-2. Apply and sync Traefik:
+2. After MetalLB's CRDs and controller are ready, apply and sync its address configuration:
+
+   ```powershell
+   kubectl apply -f bootstrap/argocd/applications/metallb-config.yaml
+   argocd app sync metallb-config
+   ```
+
+3. Apply and sync Traefik:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/traefik.yaml
    argocd app sync traefik
    ```
 
-3. Apply and sync cert-manager. Wait for all cert-manager deployments and webhook to become ready:
+4. Apply and sync cert-manager. Wait for all cert-manager deployments and webhook to become ready:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/cert-manager.yaml
    argocd app sync cert-manager
    ```
 
-4. Create a Cloudflare API token with `Zone:Read` and `DNS:Edit` access limited to `wantan.men`, `misosiru.uk`, and `yamada-factory.uk`. Then run:
+5. Create a Cloudflare API token with `Zone:Read` and `DNS:Edit` access limited to `wantan.men`, `misosiru.uk`, and `yamada-factory.uk`. Then run:
 
    ```powershell
    .\bootstrap\cert-manager\set-cloudflare-api-token.ps1
    ```
 
    The script reads the token securely and sends the Secret to `kubectl` over standard input. It does not write the token to Git or a file and refuses to replace an existing Secret.
-5. Apply and sync the ClusterIssuer configuration:
+6. Apply and sync the ClusterIssuer configuration:
 
    ```powershell
    kubectl apply -f bootstrap/argocd/applications/cert-manager-config.yaml
    argocd app sync cert-manager-config
    ```
 
-6. Sync the existing Mattermost Application to add its `chat.wantan.men` Ingress and request a production certificate:
+7. Sync the existing Mattermost Application to add its `chat.wantan.men` Ingress and request a production certificate:
 
    ```powershell
    argocd app sync mattermost
