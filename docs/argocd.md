@@ -17,13 +17,15 @@ Server-side apply is required because the ApplicationSet CRD exceeds the client-
 
 ## Access
 
-外部公開は設定せず、まず port-forward でアクセスします。
+初期セットアップ時は port-forward でアクセスできます。
 
 ```sh
 kubectl -n argocd port-forward service/argocd-server 8080:443
 ```
 
 ブラウザーで `https://127.0.0.1:8080` を開きます。初期 `admin` password は `argocd-initial-admin-secret` にあります。取得・変更後の認証情報は安全な secret manager 等に保存し、Git やログに残さないでください。
+
+LAN からは `argocd.internal.misosiru.uk` を Traefik の VIP `172.26.27.240` に向けてアクセスできます。Ingress は `letsencrypt-cloudflare` で証明書を発行し、Argo CD の HTTPS service に接続します。Cloudflare の DNS レコードは DNS-only とし、Cloudflare Access は経由しないため、LAN 内からのアクセスにも Argo CD の認証が必要です。`argocd-internal-ingress` Application は `bootstrap/argocd/applications/argocd-internal-ingress.yaml` から登録して同期します。
 
 Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。Ingress / 証明書基盤の追加手順は[こちら](ingress.md)です。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
@@ -45,6 +47,8 @@ kubectl apply -f bootstrap/argocd/github-sso-config.yaml
 `Yamada-Factory` の組織メンバーは read-only、入力したチームのメンバーは Argo CD admin になります。チーム slug は public repository に含めず、secure prompt から `argocd-rbac-cm` に設定します。初回ログイン時には GitHub の OAuth 許可が必要です。組織の OAuth app policy によっては、別途 OAuth App の承認も必要になります。この構成は既存のローカル `admin` アカウントを無効化しません。復旧用として残し、初期 password は安全な場所に保存してください。
 
 Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
+
+内部 Ingress は追加ホスト名であり、canonical URL と OAuth callback は引き続き `argocd.wantan.men` です。内部ホスト名から GitHub SSO を開始しても canonical host にリダイレクトされるため、内部ホスト名を維持したまま利用する場合はローカル `admin` アカウントを使用してください。
 
 ## GitOps configuration
 
