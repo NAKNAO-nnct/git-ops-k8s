@@ -1,0 +1,50 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-cloud-otlp
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  secretName: grafana-cloud-otlp-tls
+  issuerRef:
+    name: letsencrypt-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+    - collector.otlp.ingress.misosiru.uk
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: grafana-cloud-otlp-lan-only
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  ipAllowList:
+    sourceRange:
+      - 172.26.27.0/24
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana-cloud-otlp
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: "Host(`collector.otlp.ingress.misosiru.uk`) && PathPrefix(`/v1/`)"
+      kind: Rule
+      middlewares:
+        - name: grafana-cloud-otlp-lan-only
+      services:
+        - name: grafana-cloud-alloy-otlp
+          port: 4318
+    - match: "Host(`collector.otlp.ingress.misosiru.uk`) && PathPrefix(`/opentelemetry.proto.collector.`)"
+      kind: Rule
+      middlewares:
+        - name: grafana-cloud-otlp-lan-only
+      services:
+        - name: grafana-cloud-alloy-otlp
+          port: 4317
+          scheme: h2c
+  tls:
+    secretName: grafana-cloud-otlp-tls

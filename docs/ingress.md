@@ -68,6 +68,8 @@ For a DNS-01 dry run, temporarily use the `letsencrypt-cloudflare-staging` Clust
 
 The Cloudflare solver covers zones managed by the Cloudflare token. Sakura Cloud DNS delegation and its `ingress.internal.*` names are not configured here. The Cloudflare wildcard `*.ingress.misosiru.uk` is DNS-only and points to the private Traefik VIP `172.26.27.240`; `chat.ingress.misosiru.uk` is therefore a direct LAN route, not a public Cloudflare Tunnel route. During initial setup, keep the public Cloudflare Tunnel route pointed directly at Mattermost until the Ingress, certificate, and LoadBalancer path are verified. After verification, set its origin to `http://traefik.traefik.svc.cluster.local:80`; the existing public `chat.wantan.men` route uses this Traefik origin.
 
+The Grafana Cloud OTLP endpoint `collector.otlp.ingress.misosiru.uk` also uses Traefik and a DNS-01 certificate. Its IngressRoute accepts OTLP/HTTP and OTLP/gRPC over HTTPS port 443 and restricts clients to `172.26.27.0/24`; the receiver's ports 4317 and 4318 are not directly exposed outside the cluster.
+
 ## Verify
 
 ```powershell

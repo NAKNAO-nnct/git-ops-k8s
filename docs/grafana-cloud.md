@@ -33,3 +33,32 @@ kubectl -n monitoring get pods
 ```
 
 Confirm the Alloy pods are Ready and the cluster appears as `proxmox-k3s` in Grafana Cloud Fleet Management. Once metrics are accepted, use the Kubernetes Monitoring dashboards and select that cluster.
+
+## OTLP receiver
+
+The Alloy collector accepts OTLP/gRPC and OTLP/HTTP and forwards metrics, logs, and traces to the Grafana Cloud OTLP gateway. The existing access-policy token is referenced through the `grafana-cloud-credentials` Secret and is not stored in Git. Host-info metrics are disabled to avoid adding more series while the Free Metrics limit is reached.
+
+The LAN endpoint is `https://collector.otlp.ingress.misosiru.uk` on port 443. Traefik terminates TLS using cert-manager and allows source addresses only from `172.26.27.0/24`; Cloudflare Tunnel is not used. Configure an OpenTelemetry client with:
+
+```text
+OTEL_EXPORTER_OTLP_ENDPOINT=https://collector.otlp.ingress.misosiru.uk
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+For OTLP/gRPC, use the same endpoint and set `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`.
+
+Pods inside the cluster can use the internal Service directly:
+
+```text
+OTEL_EXPORTER_OTLP_ENDPOINT=http://grafana-cloud-alloy-otlp.monitoring.svc.cluster.local:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+```
+
+For in-cluster gRPC, use port `4317` and `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. The internal receiver is plaintext and does not authenticate individual workloads; any pod able to reach the Service can submit telemetry.
+
+After syncing `grafana-cloud` first and then `grafana-cloud-otlp`, verify the receiver Service, IngressRoute, and certificate:
+
+```powershell
+kubectl -n monitoring get service grafana-cloud-alloy-otlp
+kubectl -n monitoring get ingressroute,middleware,certificate
+```

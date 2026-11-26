@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-cloud-otlp
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/NAKNAO-nnct/git-ops-k8s.git
+    targetRevision: main
+    path: bootstrap/grafana-cloud-otlp
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

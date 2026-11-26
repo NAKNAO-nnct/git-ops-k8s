@@ -25,8 +25,40 @@ spec:
                 create: false
                 name: grafana-cloud-credentials
                 namespace: monitoring
+        destinations:
+          grafana-cloud-otlp:
+            type: otlp
+            protocol: http
+            url: https://otlp-gateway-prod-ap-northeast-0.grafana.net/otlp
+            metrics:
+              enabled: true
+            logs:
+              enabled: true
+            traces:
+              enabled: true
+            auth:
+              type: basic
+              username: "1210959"
+              passwordFrom: sys.env("GCLOUD_RW_API_KEY")
+        applicationObservability:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+          receivers:
+            otlp:
+              grpc:
+                enabled: true
+              http:
+                enabled: true
+          connectors:
+            grafanaCloudMetrics:
+              enabled: false
         collectors:
           alloy:
+            extraService:
+              enabled: true
+              fullname: grafana-cloud-alloy-otlp
             presets:
               - small
               - clustered
