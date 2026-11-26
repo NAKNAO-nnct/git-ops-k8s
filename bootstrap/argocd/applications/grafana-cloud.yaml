@@ -128,7 +128,7 @@ spec:
                 existingSecretName: grafana-cloud-credentials
                 external:
                   enabled: true
-                  url: https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom/api/v1/query
+                  url: https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom
           k8s-manifest-tail:
             deploy: true
             config:
