@@ -35,8 +35,8 @@ Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cl
 
 - Homepage URL: `https://argocd.wantan.men`
 - Authorization callback URLs:
-  - `https://argocd.wantan.men/api/dex/callback`
-  - `https://argocd.ingress.misosiru.uk/api/dex/callback`
+  - `https://argocd.wantan.men/auth/callback`
+  - `https://argocd.ingress.misosiru.uk/auth/callback`
 
 Client secret は Git に保存せず、PowerShell の secure prompt から Secret として登録します。その後、GitHub connector の base config を適用します。
 
@@ -50,7 +50,7 @@ kubectl apply -f bootstrap/argocd/github-sso-config.yaml
 
 Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
 
-`argocd.wantan.men` を canonical URL として維持しつつ、`argocd.ingress.misosiru.uk` も `argocd-cm` の `additionalUrls` に登録しています。これにより、どちらのホストからでも GitHub SSO のログイン開始と戻り先検証ができます。callback URL はそれぞれ `https://<host>/api/dex/callback` です。新しいホストを追加する際は、GitHub App 側の callback URL と `argocd-cm` の `additionalUrls` の両方を更新してください。
+`argocd.wantan.men` を canonical URL として維持しつつ、`argocd.ingress.misosiru.uk` も `argocd-cm` の `additionalUrls` に登録しています。これにより、どちらのホストからでも GitHub SSO のログイン開始と戻り先検証ができます。callback URL はそれぞれ `https://<host>/auth/callback` です。新しいホストを追加する際は、GitHub App 側の callback URL と `argocd-cm` の `additionalUrls` の両方を更新してください。
 
 ## GitOps configuration
 
