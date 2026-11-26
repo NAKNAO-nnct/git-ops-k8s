@@ -109,6 +109,8 @@ spec:
               - service-discovery
               - filesystem-log-reader
               - daemonset
+            alloy:
+              stabilityLevel: public-preview
         telemetryServices:
           kube-state-metrics:
             deploy: true
