@@ -107,6 +107,7 @@ spec:
               - small
               - clustered
               - service-discovery
+              - filesystem-log-reader
               - daemonset
         telemetryServices:
           kube-state-metrics:
