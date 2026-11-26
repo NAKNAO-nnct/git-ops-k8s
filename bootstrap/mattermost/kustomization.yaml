@@ -4,6 +4,7 @@ namespace: mattermost
 resources:
   - namespace.yaml
   - postgres.yaml
+  - postgres-network-policy.yaml
   - storage.yaml
   - mattermost.yaml
   - ingress.yaml

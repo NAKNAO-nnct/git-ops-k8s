@@ -14,7 +14,7 @@ kubectl create namespace mattermost --dry-run=client -o yaml | kubectl apply -f 
 kubectl apply -f bootstrap/argocd/applications/mattermost.yaml
 ```
 
-The script generates two independent 256-bit passwords in memory and sends the Secret through `kubectl` standard input without printing or writing either value. It refuses to overwrite an existing Secret; run it once before the database starts. Keep the Secret out of Git. PostgreSQL initializes an empty volume and allows SCRAM-authenticated connections from the K3s pod CIDR. Before Mattermost starts, its init container uses the secret-backed PostgreSQL superuser to idempotently create or update the dedicated, non-superuser `mattermost` role and database.
+The script generates two independent 256-bit passwords in memory and sends the Secret through `kubectl` standard input without printing or writing either value. It refuses to overwrite an existing Secret; run it once before the database starts. Keep the Secret out of Git. PostgreSQL initializes an empty volume and allows SCRAM-authenticated connections from the K3s pod CIDR. A NetworkPolicy further restricts network ingress to PostgreSQL to Mattermost-labeled pods in the `mattermost` namespace; other namespaces need an explicit policy change to connect. Before Mattermost starts, its init container uses the secret-backed PostgreSQL superuser to idempotently create or update the dedicated, non-superuser `mattermost` role and database.
 
 In Argo CD, manually sync the `mattermost` Application. Automatic sync and pruning are intentionally disabled.
 
@@ -37,6 +37,7 @@ For `chat.wantan.men`, Cloudflare Access is an additional login gate before Matt
 kubectl -n mattermost rollout status statefulset/postgres --timeout=10m
 kubectl -n mattermost rollout status deployment/mattermost --timeout=10m
 kubectl -n mattermost get pvc,pods,services
+kubectl -n mattermost get networkpolicy postgres-ingress
 ```
 
 Confirm both PVCs are `Bound` at 10 GiB, the Mattermost pod is Ready, `https://chat.wantan.men` displays Mattermost after Cloudflare Access authentication, and `https://chat.ingress.misosiru.uk` works from the LAN with a trusted certificate. The first Mattermost account should be created by an intended administrator; review the account-creation setting after initial setup.
