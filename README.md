@@ -10,6 +10,7 @@ infrastructure/proxmox/             generic Cloud-init VM root
 bootstrap/argocd/                     Argo CD namespace bootstrap
 bootstrap/cloudflared/                Cloudflare Tunnel connector workload
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
+bootstrap/grafana-cloud/              Grafana Cloud Kubernetes Monitoring credentials
 bootstrap/mattermost/                  Mattermost Team Edition sample workload
 docs/                                 Proxmox、network、Cilium、Argo CD 手順
 ```
@@ -25,11 +26,12 @@ docs/                                 Proxmox、network、Cilium、Argo CD 手�
 5. [Argo CD の導入手順](docs/argocd.md)に従って Argo CD を bootstrap します。
 6. [Cloudflare Tunnel の手順](docs/cloudflare-tunnel.md)に従って、Argo CD 管理画面への安全な外部アクセスを構成できます。
 7. Mattermost のサンプル構成は [Mattermost 手順](docs/mattermost.md)に従って Argo CD に登録し、Cloudflare Tunnel に公開できます。
-8. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。
+8. [Grafana Cloud Kubernetes Monitoring](docs/grafana-cloud.md) を設定して、K3s cluster の telemetry を収集できます。
+9. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。
 
 ## 運用上の注意
 
 - Terraform state には認証・構成情報が含まれます。Git に保存せず、アクセス制御・暗号化・バックアップを設定してください。
 - IPAM がない場合、Proxmox inventory だけでは手動設定された IP との重複を保証できません。適用前に確認・予約してください。
 - Namespace / NetworkPolicy は CNI が enforcement して初めて有効です。共有 kernel 上の Kubernetes は相互に信頼しない利用者を完全には隔離しません。
-- Ingress、バックアップ、監視、テナント向け RBAC はこの repository の bootstrap 対象外です。[network and isolation notes](docs/network.md)を確認してください。
+- アプリケーション固有のバックアップとテナント向け RBAC はこの repository の bootstrap 対象外です。[network and isolation notes](docs/network.md)を確認してください。

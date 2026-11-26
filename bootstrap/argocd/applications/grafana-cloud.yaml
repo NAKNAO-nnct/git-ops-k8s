@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-cloud
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: k8s-monitoring
+    targetRevision: 4.6.2
+    helm:
+      releaseName: grafana-cloud
+      valuesObject:
+        cluster:
+          name: proxmox-k3s
+        collectorCommon:
+          alloy:
+            remoteConfig:
+              enabled: true
+              url: https://fleet-management-prod-019.grafana.net
+              auth:
+                type: basic
+              secret:
+                create: false
+                name: grafana-cloud-credentials
+                namespace: monitoring
+        collectors:
+          alloy:
+            presets:
+              - small
+              - clustered
+              - service-discovery
+              - daemonset
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
