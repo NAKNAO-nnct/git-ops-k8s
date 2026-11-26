@@ -6,7 +6,7 @@ The Grafana Kubernetes Monitoring backend and its alert/recording rules are alre
 
 Pod logs are limited to `cert-manager`, `kube-system`, `metallb-system`, `monitoring`, and `traefik`; application logs, including Mattermost, are not forwarded. The filesystem-log-reader preset mounts node `/var/log` for container log collection, and Alloy's filelog receiver is set to the chart-required `public-preview` stability level. Kubernetes manifest collection is experimental and uses an allowlist that excludes Secret and ConfigMap resources. It also excludes the `argocd`, `cilium-secrets`, `kube-system`, `mattermost`, and `monitoring` namespaces and does not send full manifest payloads.
 
-Kepler runs as a privileged DaemonSet to access host energy data. OpenCost and its cost-metrics pipeline are disabled because Grafana Cloud Prometheus returned HTTP 401 with the existing credential. Re-enable them after a valid query credential with `metrics:read` is available; on-premises cost values also require a suitable pricing model.
+Kepler runs as a privileged DaemonSet to access host energy data, currently on the three workers. The control-plane nodes have a `NoSchedule` taint whose value does not match the chart's default Kepler toleration; Node Exporter still covers all six Linux nodes. OpenCost and its cost-metrics pipeline are disabled because Grafana Cloud Prometheus returned HTTP 401 with the existing credential. Re-enable them after a valid query credential with `metrics:read` is available; on-premises cost values also require a suitable pricing model.
 
 ## Create credentials
 
