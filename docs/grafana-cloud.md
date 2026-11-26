@@ -1,8 +1,12 @@
 # Grafana Cloud Kubernetes Monitoring
 
-The `grafana-cloud` Argo CD Application installs Grafana Kubernetes Monitoring chart `4.6.2` in the `monitoring` namespace and registers its Alloy collector with Grafana Cloud Fleet Management. It uses a small, clustered per-node DaemonSet with the service-discovery preset; it does not enable privileged, host-network, or host-filesystem presets.
+The `grafana-cloud` Argo CD Application installs Grafana Kubernetes Monitoring chart `4.6.2` in the `monitoring` namespace and registers its Alloy collector with Grafana Cloud Fleet Management. It enables cluster metrics (kube-state-metrics, kubelet, and cAdvisor), Linux host metrics, OpenCost, Kepler energy metrics, cluster events, selected infrastructure pod logs, and a restricted Kubernetes manifest-change feed. Kubernetes metrics and logs are sent through the Grafana Cloud OTLP destination.
 
-The Grafana Kubernetes Monitoring backend and its alert/recording rules are already activated. Keep the Grafana plan on Free; no plan upgrade is required to deploy the collector. The stack has reported that its Free Metrics limit is reached, so installing the collector does not guarantee that additional metrics will be accepted or visible.
+The Grafana Kubernetes Monitoring backend and its alert/recording rules are already activated. Keep the Grafana plan on Free; no plan upgrade is required to deploy the collector. The stack has reported that its Free Metrics limit is reached, so new metric series may be rejected and status checks may remain Offline until the limit allows ingestion again. Windows Exporter is intentionally not deployed because all six Kubernetes nodes are Linux.
+
+Pod logs are limited to `cert-manager`, `kube-system`, `metallb-system`, `monitoring`, and `traefik`; application logs, including Mattermost, are not forwarded. Kubernetes manifest collection is experimental and uses an allowlist that excludes Secret and ConfigMap resources. It also excludes the `argocd`, `cilium-secrets`, `kube-system`, `mattermost`, and `monitoring` namespaces and does not send full manifest payloads.
+
+Kepler runs as a privileged DaemonSet to access host energy data. OpenCost uses the existing `grafana-cloud-credentials` Secret to query Grafana Cloud Prometheus; on-premises cost values require a suitable pricing model to be meaningful.
 
 ## Create credentials
 

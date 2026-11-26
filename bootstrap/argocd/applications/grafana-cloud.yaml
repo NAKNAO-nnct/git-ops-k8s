@@ -54,6 +54,50 @@ spec:
           connectors:
             grafanaCloudMetrics:
               enabled: false
+        clusterMetrics:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+        hostMetrics:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+          linuxHosts:
+            enabled: true
+          energyMetrics:
+            enabled: true
+        costMetrics:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+        clusterEvents:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+        podLogsViaOpenTelemetry:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+          namespaces:
+            - cert-manager
+            - kube-system
+            - metallb-system
+            - monitoring
+            - traefik
+        kubernetesManifests:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
+          collector: alloy
+        selfReporting:
+          enabled: true
+          destinations:
+            - grafana-cloud-otlp
         collectors:
           alloy:
             extraService:
@@ -64,6 +108,53 @@ spec:
               - clustered
               - service-discovery
               - daemonset
+        telemetryServices:
+          kube-state-metrics:
+            deploy: true
+          node-exporter:
+            deploy: true
+          kepler:
+            deploy: true
+          opencost:
+            deploy: true
+            metricsSource: custom
+            opencost:
+              exporter:
+                defaultClusterId: proxmox-k3s
+              prometheus:
+                existingSecretName: grafana-cloud-credentials
+                external:
+                  enabled: true
+                  url: https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom/api/v1/query
+          k8s-manifest-tail:
+            deploy: true
+            config:
+              excludeNamespaces:
+                - argocd
+                - cilium-secrets
+                - kube-system
+                - mattermost
+                - monitoring
+              logging:
+                logDiffs: compact
+                logManifests: false
+              objects:
+                - apiVersion: v1
+                  kind: Pod
+                - apiVersion: apps/v1
+                  kind: Deployment
+                - apiVersion: apps/v1
+                  kind: StatefulSet
+                - apiVersion: apps/v1
+                  kind: DaemonSet
+                - apiVersion: batch/v1
+                  kind: Job
+                - apiVersion: batch/v1
+                  kind: CronJob
+                - apiVersion: v1
+                  kind: Service
+                - apiVersion: networking.k8s.io/v1
+                  kind: Ingress
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
