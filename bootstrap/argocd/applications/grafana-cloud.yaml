@@ -69,10 +69,7 @@ spec:
           energyMetrics:
             enabled: true
         costMetrics:
-          enabled: true
-          destinations:
-            - grafana-cloud-otlp
-          collector: alloy
+          enabled: false
         clusterEvents:
           enabled: true
           destinations:
@@ -119,16 +116,7 @@ spec:
           kepler:
             deploy: true
           opencost:
-            deploy: true
-            metricsSource: custom
-            opencost:
-              exporter:
-                defaultClusterId: proxmox-k3s
-              prometheus:
-                existingSecretName: grafana-cloud-credentials
-                external:
-                  enabled: true
-                  url: https://prometheus-prod-49-prod-ap-northeast-0.grafana.net/api/prom
+            deploy: false
           k8s-manifest-tail:
             deploy: true
             config:
