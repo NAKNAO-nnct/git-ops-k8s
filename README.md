@@ -7,7 +7,7 @@
 ```text
 infrastructure/proxmox/k3s-cluster/  3 K3s server + 3 worker VMs
 infrastructure/proxmox/             generic Cloud-init VM root
-bootstrap/argocd/                     Argo CD namespace bootstrap
+bootstrap/argocd/                     Argo CD namespace bootstrap and Application definitions
 bootstrap/cloudflared/                Cloudflare Tunnel connector workload
 bootstrap/ceph-csi/                   Ceph CSI operator and driver resources
 bootstrap/grafana-cloud/              Grafana Cloud Kubernetes Monitoring credentials
@@ -27,7 +27,8 @@ docs/                                 Proxmox、network、Cilium、Argo CD 手�
 6. [Cloudflare Tunnel の手順](docs/cloudflare-tunnel.md)に従って、Argo CD 管理画面への安全な外部アクセスを構成できます。
 7. Mattermost のサンプル構成は [Mattermost 手順](docs/mattermost.md)に従って Argo CD に登録し、Cloudflare Tunnel に公開できます。
 8. [Grafana Cloud Kubernetes Monitoring](docs/grafana-cloud.md) を設定して、K3s cluster の telemetry を収集できます。
-9. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。
+9. アプリケーションが S3 bucket を filesystem として必要とする場合は、[S3 CSI driver の手順](docs/s3-csi.md)に従って導入できます。
+10. その他のアプリケーションは、実際に運用するものを決めた後に Git repository と Argo CD Application を追加します。
 
 ## 運用上の注意
 
