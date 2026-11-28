@@ -56,6 +56,8 @@ argocd app sync arc-runner-large --sync-option CreateNamespace=true
 
 Use the Argo CD UI to sync if the `argocd` CLI is unavailable. The runner Applications reference the `arc-github-app` Secret and the controller ServiceAccount in `arc-systems`.
 
+The controller Application uses `Replace=true` because the upstream ARC CRDs exceed the client-side apply annotation limit.
+
 ## Security
 
 Docker-in-Docker runs a privileged container. Treat jobs on these runners as trusted code: do not route untrusted fork pull requests or other untrusted workflows to them. A compromised job can affect its worker node; use dedicated workers and appropriate repository/workflow controls when practical.
