@@ -87,6 +87,8 @@ cp bootstrap/ceph-csi/examples/storageclass-cephfs.yaml.example secrets/ceph-csi
 
 CephX key file はキーだけを含む内容にし、秘密値をコマンド引数や Git に書きません。上記で作成した key file を安全に `secrets/ceph-csi/rbd.key` と `secrets/ceph-csi/cephfs.key` へ転送します。Secret の `userID` には `client.` prefix を付けません。
 
+RBD pool を変更する場合は StorageClass の設定だけでなく、CephX client の OSD / MGR caps も移行先 pool に限定して許可します。既存 client の権限を広げるより、移行先 pool 専用の client と Kubernetes Secret を作成し、StorageClass の各 secret reference を更新してください。CephX key は Git やコマンド出力に含めないでください。
+
 ```sh
 kubectl -n ceph-csi-operator-system create secret generic csi-rbd-secret \
   --from-literal=userID=csi-rbd \
@@ -112,6 +114,8 @@ kubectl get csidriver
 ```
 
 アプリケーションは PVC の `storageClassName` に `ceph-rbd`（通常 `ReadWriteOnce`）または `cephfs`（`ReadWriteMany`）を明示します。既定 StorageClass は引き続き `local-path` です。PVC の要求容量は論理容量であり、物理容量の予約ではありません。Ceph pool を監視し、実際の PVC provision / mount をテストしてから workload を載せてください。両 Ceph StorageClass は `Retain` なので、PVC 削除だけでは Ceph 上のデータは自動削除されません。
+
+StorageClass の `parameters` は作成後に変更できません。pool を切り替えるときは新しい StorageClass を作るか、参照中の PVC がなくなってから既存クラスを再作成します。アプリケーションを切り替える前に、短命な PVC で移行先 pool への provision / mount / cleanup を確認してください。
 
 CSI はアプリの永続データを Ceph に置きますが、worker の 64 GiB boot disk は引き続き OS、containerd image、ログ、`emptyDir` などに使われます。node の ephemeral storage が不足しないよう `nodefs` / image 使用量を監視してください。また、StorageClass や共有 CephX user だけでは tenant 間の強いデータ境界にならないため、実運用で分離が必要なら pool / filesystem / CephX user と Kubernetes の権限を合わせて設計します。
 
