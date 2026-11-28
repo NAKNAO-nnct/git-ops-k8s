@@ -63,6 +63,14 @@ Web-based Terminal は `argocd-cm` の `exec.enabled: "true"` で有効になり
 
 Terminal は Application の Pod 内で任意のコマンドを実行できる強い権限です。Pod に Kubernetes ServiceAccount token がマウントされている場合、その ServiceAccount の権限も利用できるため、信頼できる管理者に限定してください。
 
+既存の GitHub admin team の `policy.csv` を変更せずにライブ設定だけを反映するには、`argocd-cm` のみを patch して Argo CD server を再起動します。
+
+```powershell
+kubectl -n argocd patch configmap argocd-cm --type merge -p '{"data":{"exec.enabled":"true"}}'
+kubectl -n argocd rollout restart deployment/argocd-server
+kubectl -n argocd rollout status deployment/argocd-server --timeout=2m
+```
+
 `argocd.ingress.misosiru.uk` を canonical URL とし、`argocd.wantan.men` は `argocd-cm` の `additionalUrls` に登録しています。GitHub OAuth App の callback は Dex の `/api/dex/callback`、Dex から Argo CD への callback は `/auth/callback` です。GitHub OAuth App には前者の両ホスト分を登録してください。新しいホストを追加する際は、GitHub OAuth App 側の callback URL と `argocd-cm` の `additionalUrls` の両方を更新してください。
 
 ## GitOps configuration
