@@ -7,9 +7,9 @@ metadata:
     app.kubernetes.io/name: argocd-cm
     app.kubernetes.io/part-of: argocd
 data:
-  url: https://argocd.wantan.men
+  url: https://argocd.ingress.misosiru.uk
   additionalUrls: |
-    - https://argocd.ingress.misosiru.uk
+    - https://argocd.wantan.men
   dex.config: |
     connectors:
       - type: github
