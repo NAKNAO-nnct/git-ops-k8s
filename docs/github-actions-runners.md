@@ -40,7 +40,7 @@ Applications do not auto-sync. Apply and sync the CRDs first, then the controlle
 
 ```powershell
 kubectl apply -f bootstrap/argocd/applications/arc-crds.yaml
-argocd app sync arc-crds
+argocd app sync arc-crds --sync-option CreateNamespace=true --sync-option ServerSideApply=true
 argocd app wait arc-crds --sync --health --timeout 5m
 
 kubectl apply -f bootstrap/argocd/applications/arc-controller.yaml
@@ -58,7 +58,7 @@ argocd app sync arc-runner-medium --sync-option CreateNamespace=true
 argocd app sync arc-runner-large --sync-option CreateNamespace=true
 ```
 
-Use the Argo CD UI to sync if the `argocd` CLI is unavailable. The runner Applications reference the `arc-github-app` Secret and the controller ServiceAccount in `arc-systems`.
+Use the Argo CD UI to sync if the `argocd` CLI is unavailable; include the `ServerSideApply=true` sync option when syncing `arc-crds`. The runner Applications reference the `arc-github-app` Secret and the controller ServiceAccount in `arc-systems`.
 
 The upstream ARC CRDs exceed the client-side apply annotation limit, so `arc-crds` manages them separately with Server-Side Apply. The Helm controller Application skips its bundled CRDs.
 
