@@ -11,6 +11,7 @@ spec:
     targetRevision: 0.15.1
     helm:
       releaseName: arc
+      skipCrds: true
       valuesObject:
         serviceAccount:
           name: arc-controller
@@ -20,4 +21,3 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
-      - Replace=true

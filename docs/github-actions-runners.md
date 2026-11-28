@@ -36,9 +36,13 @@ The Secret is consumed by the runner scale-set charts. Kubernetes Secrets are no
 
 ## Install
 
-Applications do not auto-sync. Apply and sync the controller and StorageClass first, create the Secret, then install the three scale sets:
+Applications do not auto-sync. Apply and sync the CRDs first, then the controller and StorageClass. Create the GitHub App Secret before installing the three scale sets:
 
 ```powershell
+kubectl apply -f bootstrap/argocd/applications/arc-crds.yaml
+argocd app sync arc-crds
+argocd app wait arc-crds --sync --health --timeout 5m
+
 kubectl apply -f bootstrap/argocd/applications/arc-controller.yaml
 argocd app sync arc-controller --sync-option CreateNamespace=true
 kubectl -n arc-systems rollout status deployment/arc-gha-rs-controller --timeout=5m
@@ -56,7 +60,7 @@ argocd app sync arc-runner-large --sync-option CreateNamespace=true
 
 Use the Argo CD UI to sync if the `argocd` CLI is unavailable. The runner Applications reference the `arc-github-app` Secret and the controller ServiceAccount in `arc-systems`.
 
-The controller Application uses `Replace=true` because the upstream ARC CRDs exceed the client-side apply annotation limit.
+The upstream ARC CRDs exceed the client-side apply annotation limit, so `arc-crds` manages them separately with Server-Side Apply. The Helm controller Application skips its bundled CRDs.
 
 ## Security
 
