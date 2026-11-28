@@ -27,6 +27,21 @@ spec:
               fsGroup: 1001
               fsGroupChangePolicy: OnRootMismatch
             initContainers:
+              - name: init-work-permissions
+                image: ghcr.io/actions/actions-runner:latest
+                command: ["/bin/sh", "-c", "chown 1001:1001 /home/runner/_work && chmod 0775 /home/runner/_work"]
+                securityContext:
+                  runAsUser: 0
+                volumeMounts:
+                  - name: work
+                    mountPath: /home/runner/_work
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                  limits:
+                    cpu: 50m
+                    memory: 64Mi
               - name: init-dind-externals
                 image: ghcr.io/actions/actions-runner:latest
                 command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
