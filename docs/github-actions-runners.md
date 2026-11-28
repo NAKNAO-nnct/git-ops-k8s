@@ -10,7 +10,7 @@ Each runner uses Docker-in-Docker. The runner workspace and Docker image layers 
 | `medium` | 4 CPU / 4 GiB | 20 GiB |
 | `large` | 16 CPU / 16 GiB | 50 GiB |
 
-An init container sets the fresh volume's root ownership to UID/GID 1001 so the runner can write to `_work`; `fsGroup` alone was insufficient on this cluster.
+The PVC contains separate `work` and `docker` subdirectories mounted with `subPath`, keeping Docker's data directory isolated from the runner workspace. An init container creates both directories and sets `work` ownership to UID/GID 1001; `fsGroup` alone was insufficient on this cluster.
 
 `minRunners` is zero, so no idle runner Pods are kept. `maxRunners` is intentionally unset; ARC may create a runner for each queued job. This avoids an explicit concurrency cap, but a burst of jobs can still create many Pods and Ceph PVCs. The PVC requests are logical capacity, not a physical reservation. Monitor the Ceph pool and Kubernetes node capacity.
 

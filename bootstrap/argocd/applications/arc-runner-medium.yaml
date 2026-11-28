@@ -29,12 +29,20 @@ spec:
             initContainers:
               - name: init-work-permissions
                 image: ghcr.io/actions/actions-runner:latest
-                command: ["/bin/sh", "-c", "chown 1001:1001 /home/runner/_work && chmod 0775 /home/runner/_work"]
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    set -eu
+                    mkdir -p /mnt/runner-data/work /mnt/runner-data/docker
+                    chown 1001:1001 /mnt/runner-data/work
+                    chmod 0775 /mnt/runner-data/work
+                    chmod 0755 /mnt/runner-data/docker
                 securityContext:
                   runAsUser: 0
                 volumeMounts:
                   - name: work
-                    mountPath: /home/runner/_work
+                    mountPath: /mnt/runner-data
                 resources:
                   requests:
                     cpu: 50m
@@ -78,8 +86,10 @@ spec:
                 volumeMounts:
                   - name: work
                     mountPath: /home/runner/_work
+                    subPath: work
                   - name: work
                     mountPath: /var/lib/docker
+                    subPath: docker
                   - name: dind-sock
                     mountPath: /var/run
                   - name: dind-externals
@@ -103,6 +113,7 @@ spec:
                 volumeMounts:
                   - name: work
                     mountPath: /home/runner/_work
+                    subPath: work
                   - name: dind-sock
                     mountPath: /var/run
                 resources:
