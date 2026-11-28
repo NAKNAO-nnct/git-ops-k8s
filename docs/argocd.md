@@ -50,6 +50,13 @@ kubectl apply -f bootstrap/argocd/github-sso-config.yaml
 
 Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
 
+`argocd-cm` の `url` または `additionalUrls` を変更した後は、OIDC issuer 設定を確実に再読み込みするため Argo CD server を再起動し、rollout 完了を確認してください。
+
+```powershell
+kubectl -n argocd rollout restart deployment/argocd-server
+kubectl -n argocd rollout status deployment/argocd-server --timeout=2m
+```
+
 `argocd.ingress.misosiru.uk` を canonical URL とし、`argocd.wantan.men` は `argocd-cm` の `additionalUrls` に登録しています。GitHub SSO の callback URL は両方とも GitHub OAuth App に登録してください。新しいホストを追加する際は、GitHub OAuth App 側の callback URL と `argocd-cm` の `additionalUrls` の両方を更新してください。
 
 ## GitOps configuration
