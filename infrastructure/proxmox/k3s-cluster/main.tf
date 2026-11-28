@@ -85,8 +85,8 @@ locals {
       vm_id     = 9301
       role      = "agent"
       bootstrap = false
-      cores     = 8
-      memory    = 16384
+      cores     = 24
+      memory    = 32768
       disk_gb   = 64
     }
     "k3s-master-pve03" = {
@@ -103,8 +103,8 @@ locals {
       vm_id     = 9303
       role      = "agent"
       bootstrap = false
-      cores     = 8
-      memory    = 16384
+      cores     = 24
+      memory    = 32768
       disk_gb   = 64
     }
     "k3s-master-pve04" = {
@@ -121,8 +121,8 @@ locals {
       vm_id     = 9305
       role      = "agent"
       bootstrap = false
-      cores     = 8
-      memory    = 16384
+      cores     = 24
+      memory    = 32768
       disk_gb   = 64
     }
   }
