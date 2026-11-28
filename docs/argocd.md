@@ -50,12 +50,18 @@ kubectl apply -f bootstrap/argocd/github-sso-config.yaml
 
 Client secret をローテーションする場合は GitHub で新しい secret を生成し、secure prompt から Secret を更新します。Argo CD の公開 URL や callback URL を変える場合は、GitHub OAuth App と `argocd-cm` の両方を更新してください。
 
-`argocd-cm` の `url` または `additionalUrls` を変更した後は、OIDC issuer 設定を確実に再読み込みするため Argo CD server を再起動し、rollout 完了を確認してください。
+`argocd-cm` の `url`、`additionalUrls` または `exec.enabled` を変更した後は、設定を再読み込みするため Argo CD server を再起動し、rollout 完了を確認してください。
 
 ```powershell
 kubectl -n argocd rollout restart deployment/argocd-server
 kubectl -n argocd rollout status deployment/argocd-server --timeout=2m
 ```
+
+## Web-based Terminal
+
+Web-based Terminal は `argocd-cm` の `exec.enabled: "true"` で有効になります。利用者には Argo CD の `exec` リソースに対する `create` 権限が必要です。この構成では GitHub admin team の `role:admin` のみが対象となり、`role:readonly` の組織メンバーには権限を追加しません。
+
+Terminal は Application の Pod 内で任意のコマンドを実行できる強い権限です。Pod に Kubernetes ServiceAccount token がマウントされている場合、その ServiceAccount の権限も利用できるため、信頼できる管理者に限定してください。
 
 `argocd.ingress.misosiru.uk` を canonical URL とし、`argocd.wantan.men` は `argocd-cm` の `additionalUrls` に登録しています。GitHub OAuth App の callback は Dex の `/api/dex/callback`、Dex から Argo CD への callback は `/auth/callback` です。GitHub OAuth App には前者の両ホスト分を登録してください。新しいホストを追加する際は、GitHub OAuth App 側の callback URL と `argocd-cm` の `additionalUrls` の両方を更新してください。
 

@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   url: https://argocd.ingress.misosiru.uk
+  exec.enabled: "true"
   additionalUrls: |
     - https://argocd.wantan.men
   dex.config: |
