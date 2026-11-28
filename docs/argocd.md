@@ -27,7 +27,7 @@ kubectl -n argocd port-forward service/argocd-server 8080:443
 
 LAN からは `argocd.ingress.misosiru.uk` を Traefik の VIP `172.26.27.240` に向けてアクセスできます。Cloudflare の `*.ingress.misosiru.uk` は DNS-only の A レコードとして VIP を指し、Ingress は `letsencrypt-cloudflare` で証明書を発行します。Traefik から Argo CD への HTTPS 接続は `argocd-server` Service の注釈と ServersTransport で設定します。Cloudflare Access は経由しないため、LAN 内からのアクセスにも Argo CD の認証が必要です。`argocd-internal-ingress` Application は `bootstrap/argocd/applications/argocd-internal-ingress.yaml` から登録して同期します。
 
-Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。Grafana Cloud Kubernetes Monitoring の collector は[手順](grafana-cloud.md)を確認して登録します。Ingress / 証明書基盤の追加手順は[こちら](ingress.md)です。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
+Cloudflare Tunnel 用の Argo CD `Application` は [Cloudflare Tunnel 手順](cloudflare-tunnel.md)に従って登録します。Grafana Cloud Kubernetes Monitoring の collector は[手順](grafana-cloud.md)を確認して登録します。Ingress / 証明書基盤の追加手順は[こちら](ingress.md)です。Actions Runner Controller と Ceph 一時ボリュームは[GitHub Actions runner 手順](github-actions-runners.md)を確認してください。その他のアプリケーションを追加する際は、repository URL、branch、project、destination namespace、同期・prune 方針を確認した `Application` を別途作成します。初期状態ではアプリを自動同期・削除しません。
 
 ## GitHub SSO
 
